@@ -11,22 +11,23 @@ async function fetchGitInfo() {
         }
         
         const data = await response.json();
-        const date = data.commit.author.date;
+        const date = new Date(data.commit.author.date);
         const message = data.commit.message;
-        const shortSha = data.sha.substring(0, 7);
-
-        const footer = document.querySelector('footer');
-        const gitInfoDiv = document.createElement('div');
-        gitInfoDiv.className = 'git-info text-body-secondary';
+        
+        // Update copyright year
+        document.getElementById('copyright-year').textContent = date.getFullYear();
+        
+        // Update git info
+        const gitInfoDiv = document.getElementById('git-info');
         gitInfoDiv.innerHTML = `
-            <p class="mb-0">
-                Last modified: ${new Date(date).toLocaleDateString()} 
-                | Comment: <a href="https://github.com/${owner}/${repo}/commit/${data.sha}" 
+            <small>
+                Last modified: ${date.toLocaleDateString()} 
+                <br>
+                Comment: <a href="https://github.com/${owner}/${repo}/commit/${data.sha}" 
                     class="text-body-secondary" 
                     title="${message}"
-                    target="_blank">${message.substring(0, 50)}${message.length > 50 ? '...' : ''}</a>
-            </p>`;
-        footer.appendChild(gitInfoDiv);
+                    target="_blank">${message.substring(0, 30)}${message.length > 30 ? '...' : ''}</a>
+            </small>`;
     } catch (error) {
         console.error('Error fetching git info:', error);
     }
