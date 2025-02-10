@@ -14,15 +14,23 @@
 </head>
 
 <body class="d-flex flex-column h-100 text-center">
-    <header class="p-3">
-        <div>
-            <nav class="nav nav-masthead justify-content-center">
-                <a class="nav-link fw-bold py-1 px-0 active" aria-current="page" href="#">Home</a>
-                <a class="nav-link fw-bold py-1 px-0" href="#">Features</a>
-                <a class="nav-link fw-bold py-1 px-0" href="#">Contact</a>
-            </nav>
-        </div>
-    </header>
+    
+    <div class="container">
+        <header class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-between py-3 mb-4 border-bottom">
+          <a href="/" class="d-flex align-items-center col-md-3 mb-2 mb-md-0 text text-decoration-none">
+            <span class="fs-1 fw-bold text-white">LK</span>
+          </a>
+    
+          <ul class="nav col-12 col-md-auto mb-2 justify-content-center mb-md-0">
+            <li><a href="#" class="nav-link px-2 text-secondary">Home</a></li>
+            <li><a href="#" class="nav-link px-2 text-white">About</a></li>
+          </ul>
+    
+          <div class="col-md-3 text-end">
+            <button type="button" class="btn btn-outline-light me-2">Login</button>
+          </div>
+        </header>
+    </div>
 
     <main class="d-flex flex-grow-1 align-items-center justify-content-center">
         <div class="container px-3">
@@ -31,9 +39,9 @@
             <img src="images/under.gif" alt="Under Construction">
         </div>
     </main>
-
-    <footer class="footer mt-auto py-3 border-top">
-        <div class="container">
+    
+    <div class="container">
+        <footer class="footer mt-auto py-3 border-top">
             <div class="row align-items-center">
                 <div class="col-md-4 text-start">
                     <span class="text-body-secondary">© <span id="copyright-year"></span> Lauri Kohtamäki</span>
@@ -55,8 +63,9 @@
                     </ul>
                 </div>
             </div>
-        </div>
-    </footer>
+        </footer>
+    </div>
+    
     <script src="js/gitInfo.js"></script>
 </body>
 </html>
