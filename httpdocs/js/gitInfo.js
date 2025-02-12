@@ -1,4 +1,4 @@
-async function fetchGitInfo() {
+export async function fetchGitInfo() {
     try {
         const owner = 'Lixias';
         const repo = 'website';
