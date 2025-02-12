@@ -1,0 +1,16 @@
+
+[data-bs-theme="dark"] #theme-toggle-light-icon {
+    display: inline-block;
+}
+
+[data-bs-theme="dark"] #theme-toggle-dark-icon {
+    display: none;
+}
+
+[data-bs-theme="light"] #theme-toggle-light-icon {
+    display: none;
+}
+
+[data-bs-theme="light"] #theme-toggle-dark-icon {
+    display: inline-block;
+}
