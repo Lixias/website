@@ -20,40 +20,84 @@
 
 </head>
 
-<body class="d-flex flex-column h-100 text-center">
-    
-    <div class="container">
-        <header class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-between py-3 mb-4 border-bottom">
-          <a href="/" class="d-flex align-items-center col-md-3 mb-2 mb-md-0 text text-decoration-none">
-            <span class="fs-1 fw-bold text-body-emphasis">LK</span>
-          </a>
+<body class="d-flex flex-column min-vh-100">
+    <main class="flex-shrink-0">
+        <!-- Main container -->
+        <div class="container py-4">
         
-          <ul class="nav col-12 col-md-auto mb-2 justify-content-center mb-md-0">
-            <li><a href="#" class="nav-link px-2 text-body-emphasis">Home</a></li>
-            <li><a href="#" class="nav-link px-2 text-body-emphasis">About</a></li>
-          </ul>
-        
-          <div class="col-md-3 text-end">
-            <button type="button" class="btn btn-outline-emphasis me-2">Login</button>
-            <button type="button" class="btn btn-outline-emphasis" id="theme-toggle">
-                <i class="bi bi-sun-fill" id="theme-toggle-light-icon"></i>
-                <i class="bi bi-moon-fill" id="theme-toggle-dark-icon"></i>
-            </button>
-          </div>
-        </header>
-    </div>
+        <!-- navigation bar -->
+        <div class="container">
+            <header class="d-flex flex-wrap align-items-center justify-content-center justify-content-md-between py-3 mb-4 border-bottom">
+              <a href="/" class="d-flex align-items-center col-md-3 mb-2 mb-md-0 text text-decoration-none">
+                <span class="fs-1 fw-bold text-body-emphasis">LK</span>
+              </a>
+            
+              <ul class="nav col-12 col-md-auto mb-2 justify-content-center mb-md-0">
+                <li><a href="#" class="nav-link px-2 text-body-emphasis">Home</a></li>
+                <li><a href="#" class="nav-link px-2 text-body-emphasis">About</a></li>
+              </ul>
+            
+              <div class="col-md-3 text-end">
+                <button type="button" class="btn btn-outline-emphasis me-2">Login</button>
+                <button type="button" class="btn btn-outline-emphasis" id="theme-toggle">
+                    <i class="bi bi-sun-fill" id="theme-toggle-light-icon"></i>
+                    <i class="bi bi-moon-fill" id="theme-toggle-dark-icon"></i>
+                </button>
+              </div>
+            </header>
+        </div>
+           
+        <!-- Jumbotron -->
+        <div class="p-5 mb-4 bg-body-tertiary rounded-3">
+            <div class="container-fluid py-5">
+                <h1 class="display-5 fw-bold">Lauri Kohtamäki</h1>
+                <p class="col-md-8 fs-4">an engineer, learning by doing</p>
+            </div>
+        </div>
+            
 
-    <main class="d-flex flex-grow-1 align-items-center justify-content-center">
-        <div class="container px-3">
-            <h1>Lauri Kohtamäki</h1>
-            <p class="lead">an engineer, learning by doing.</p>
-            <img src="images/under.gif" alt="Under Construction">
+        <!-- Skills Cards -->
+        <div class="container px-4 py-5">
+            <div class="row g-4 row-cols-1 row-cols-md-3">
+                <!-- Software Development -->
+                <div class="col">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="bi bi-code-square display-4 mb-3"></i>
+                            <h3 class="card-title">Software Development</h3>
+                            <img src="images/under.gif" alt="Under Construction" class="img-fluid mt-3">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Engineering -->
+                <div class="col">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="bi bi-gear display-4 mb-3"></i>
+                            <h3 class="card-title">Engineering</h3>
+                            <img src="images/under.gif" alt="Under Construction" class="img-fluid mt-3">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Innovation -->
+                <div class="col">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="bi bi-lightbulb display-4 mb-3"></i>
+                            <h3 class="card-title">Innovation</h3>
+                            <img src="images/under.gif" alt="Under Construction" class="img-fluid mt-3">
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
-    
-    <div class="container">
-        <footer class="footer mt-auto py-3 border-top">
-            <div class="row align-items-center">
+
+    <footer class="footer mt-auto py-3">
+        <div class="container">
+            <div class="row align-items-center py-3 border-top">
                 <div class="col-md-4 text-start">
                     <span class="text-body-secondary">© <span id="copyright-year"></span> Lauri Kohtamäki</span>
                 </div>
@@ -74,8 +118,8 @@
                     </ul>
                 </div>
             </div>
-        </footer>
-    </div>
+        </div>
+    </footer>
     
     <script type="module" src="js/index.js"></script>
 </body>
