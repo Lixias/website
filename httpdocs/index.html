@@ -43,11 +43,54 @@
         </header>
     </div>
 
-    <main class="d-flex flex-grow-1 align-items-center justify-content-center">
-        <div class="container px-3">
-            <h1>Lauri Kohtamäki</h1>
-            <p class="lead">an engineer, learning by doing.</p>
-            <img src="images/under.gif" alt="Under Construction">
+    <main class="flex-grow-1">
+        <!-- Hero Section -->
+        <div class="container px-3 mb-5">
+            <div class="card">
+                <div class="card-body">
+                    <h1>Lauri Kohtamäki</h1>
+                    <p class="lead mb-0">an engineer, learning by doing.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulation Section -->
+        <div class="container mb-5">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Galton Board Simulation</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="simulation-container">
+                                <div id="simulation-canvas"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="simulation-stats">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Slot</th>
+                                            <th>Total</th>
+                                            <th>Current</th>
+                                            <th>Total %</th>
+                                            <th>Current %</th>
+                                            <th>Expected %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="counterTableBody"></tbody>
+                                </table>
+                                <div class="stats-summary">
+                                    <p>Total Balls: <span id="totalBalls">0</span></p>
+                                    <p>Current Balls: <span id="currentBalls">0</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
     
@@ -77,6 +120,8 @@
         </footer>
     </div>
     
+    <!-- Matter.js simulation script -->
+    <script type="module" src="js/simulation.js"></script>
     <script type="module" src="js/index.js"></script>
 </body>
 </html>
