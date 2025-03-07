@@ -108,6 +108,9 @@ const CycleState = {
     REACTIVATING: 'REACTIVATING'
 };
 
+// Import analytics functions
+import { updateSlotData, recordStateChange, recordLostBalls } from './analytics.js';
+
 // -------------------------
 // Engine, Renderer, & Runner
 // -------------------------
@@ -278,26 +281,36 @@ function updateCounts() {
     document.getElementById('totalBalls').textContent = totalBalls.count;
     document.getElementById('currentBalls').textContent = currentBallCount;
 
+    // After updating all slot statistics
+    updateSlotData(slotStats);
+    
     return { currentBallCount, newBallsProcessed };
 }
 
 // Manage simulation cycle based on current state.
 function manageCycle() {
+    const currentTime = Date.now();
+    const elapsedTime = currentTime - stateStartTime;
+    
+    let nextState = currentState;
+    
     switch (currentState) {
         case CycleState.WAITING_FOR_COLLECTION:
             if (currentBallCount === BATCH_SIZE) {
-                currentState = CycleState.HOLDING;
+                nextState = CycleState.HOLDING;
             }
-            if (Date.now() - stateStartTime > 15000) {
-                console.log(`Lost ${BATCH_SIZE - currentBallCount} balls after 15s timeout`);
-                currentState = CycleState.RELEASING;
+            if (currentTime - stateStartTime > 15000) {
+                const lostBalls = BATCH_SIZE - currentBallCount;
+                console.log(`Lost ${lostBalls} balls after 15s timeout`);
+                recordLostBalls(lostBalls);
+                nextState = CycleState.RELEASING;
                 animateBarWidth(BAR_FULL_WIDTH, BAR_SLIM_WIDTH, TRANSITION_TIME);
             }
             break;
 
         case CycleState.HOLDING:
-            if (Date.now() - stateStartTime > HOLDING_TIME) {
-                currentState = CycleState.RELEASING;
+            if (currentTime - stateStartTime > HOLDING_TIME) {
+                nextState = CycleState.RELEASING;
                 animateBarWidth(BAR_FULL_WIDTH, BAR_SLIM_WIDTH, TRANSITION_TIME);
             }
             break;
@@ -305,22 +318,23 @@ function manageCycle() {
         case CycleState.RELEASING:
             if (currentBallCount === 0) {
                 animateBarWidth(BAR_SLIM_WIDTH, BAR_FULL_WIDTH, TRANSITION_TIME);
-                currentState = CycleState.REACTIVATING;
+                nextState = CycleState.REACTIVATING;
             }
             break;
         
         case CycleState.REACTIVATING:
             if (currentBarWidth === BAR_FULL_WIDTH) {
                 balls_to_spawn = BATCH_SIZE;
-                currentState = CycleState.WAITING_FOR_COLLECTION;
+                nextState = CycleState.WAITING_FOR_COLLECTION;
             }
             break;
     }
 
-    if (currentState !== previousState) {
-        console.log(`State: ${currentState}, ${previousState} took: ${Date.now() - stateStartTime}`);
-        previousState = currentState;
-        stateStartTime = Date.now();
+    if (nextState !== currentState) {
+        console.log(`State: ${nextState}, ${currentState} took: ${elapsedTime}`);
+        recordStateChange(currentState, nextState, elapsedTime);
+        currentState = nextState;
+        stateStartTime = currentTime;
     }
 }
 
