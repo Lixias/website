@@ -183,6 +183,22 @@ const totalBalls   = { count: 0 };
 let numSlots       = 0;
 
 // -------------------------
+// Heat Map Constants
+// -------------------------
+const HEATMAP_RESOLUTION = 10; // Size of each heat map cell in pixels
+const HEATMAP_OPACITY = 0.7;   // Opacity of the heat map overlay
+const MAX_HEAT_VALUE = 100;    // Value at which a cell reaches maximum color intensity
+const HEAT_DECAY = 0.99;       // Decay factor for heat (per frame)
+
+// -------------------------
+// Heat Map Variables
+// -------------------------
+let heatMapData = {};          // Object to store heat values
+let heatMapCanvas = null;      // Canvas for rendering the heat map
+let heatMapContext = null;     // Canvas context
+let showHeatMap = true;        // Toggle for heat map visibility
+
+// -------------------------
 // Function Definitions
 // -------------------------
 
@@ -368,6 +384,114 @@ function animateBarWidth(startWidth, endWidth, duration, callback) {
     requestAnimationFrame(animate);
 }
 
+// Create heat map setup function
+function setupHeatMap() {
+    // Create heat map canvas
+    heatMapCanvas = document.createElement('canvas');
+    heatMapCanvas.width = CANVAS_WIDTH;
+    heatMapCanvas.height = CANVAS_HEIGHT;
+    heatMapCanvas.style.position = 'absolute';
+    heatMapCanvas.style.top = '0';
+    heatMapCanvas.style.left = '0';
+    heatMapCanvas.style.pointerEvents = 'none'; // Allow clicks to pass through
+    heatMapCanvas.style.opacity = HEATMAP_OPACITY;
+    
+    // Get the parent container
+    const simulationContainer = document.querySelector('.simulation-container');
+    simulationContainer.appendChild(heatMapCanvas);
+    
+    // Get context and set initial styles
+    heatMapContext = heatMapCanvas.getContext('2d');
+    
+    // Create UI controls for heatmap
+    const controlsContainer = document.createElement('div');
+    controlsContainer.className = 'heat-map-controls';
+    controlsContainer.innerHTML = `
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="heatMapToggle" checked>
+            <label class="form-check-label" for="heatMapToggle">Heat Map</label>
+        </div>
+        <button class="btn btn-sm btn-outline-secondary mt-2" id="resetHeatMap">Reset Heat Map</button>
+    `;
+    
+    simulationContainer.appendChild(controlsContainer);
+    
+    // Add event listeners
+    document.getElementById('heatMapToggle').addEventListener('change', function(e) {
+        showHeatMap = e.target.checked;
+        heatMapCanvas.style.display = showHeatMap ? 'block' : 'none';
+    });
+    
+    document.getElementById('resetHeatMap').addEventListener('click', function() {
+        heatMapData = {};
+        drawHeatMap();
+    });
+}
+
+// Function to update heat map data
+function updateHeatMap() {
+    // Decay all heat values slightly each frame
+    Object.keys(heatMapData).forEach(key => {
+        heatMapData[key] *= HEAT_DECAY;
+        
+        // Remove very small values to prevent memory buildup
+        if (heatMapData[key] < 0.1) {
+            delete heatMapData[key];
+        }
+    });
+    
+    // Get all balls
+    const balls = Composite.allBodies(world).filter(body => 
+        body.circleRadius && body.circleRadius === BALL_RADIUS);
+    
+    // Track ball positions
+    balls.forEach(ball => {
+        // Get the grid cell coordinates
+        const gridX = Math.floor(ball.position.x / HEATMAP_RESOLUTION);
+        const gridY = Math.floor(ball.position.y / HEATMAP_RESOLUTION);
+        const key = `${gridX},${gridY}`;
+        
+        // Increase heat at this position
+        if (!heatMapData[key]) {
+            heatMapData[key] = 0;
+        }
+        
+        heatMapData[key] += 0.5;
+        
+        // Cap the heat value
+        if (heatMapData[key] > MAX_HEAT_VALUE) {
+            heatMapData[key] = MAX_HEAT_VALUE;
+        }
+    });
+    
+    // Only redraw the heatmap if it's visible
+    if (showHeatMap) {
+        drawHeatMap();
+    }
+}
+
+// Function to draw the heat map
+function drawHeatMap() {
+    // Clear the canvas
+    heatMapContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    
+    // Draw each cell with appropriate color
+    Object.keys(heatMapData).forEach(key => {
+        const [gridX, gridY] = key.split(',').map(Number);
+        const x = gridX * HEATMAP_RESOLUTION;
+        const y = gridY * HEATMAP_RESOLUTION;
+        const intensity = heatMapData[key] / MAX_HEAT_VALUE; // 0 to 1
+        
+        // Create heat color (blue to red gradient)
+        const r = Math.floor(255 * Math.min(1, intensity * 2));
+        const g = Math.floor(255 * Math.min(1, 2 - intensity * 2));
+        const b = Math.floor(intensity < 0.5 ? 255 * intensity * 2 : 0);
+        
+        heatMapContext.fillStyle = `rgba(${r}, ${g}, ${b}, ${intensity})`;
+        heatMapContext.fillRect(x, y, HEATMAP_RESOLUTION, HEATMAP_RESOLUTION);
+    });
+}
+
 // -------------------------
 // Main Simulation Setup
 // -------------------------
@@ -484,6 +608,7 @@ document.addEventListener('click', function(event) {
 Events.on(engine, 'afterUpdate', function() {
     updateCounts();
     manageCycle();
+    updateHeatMap();
     
     Composite.allBodies(world).forEach(body => {
         if (!body.isStatic && body.position.y > CANVAS_HEIGHT + 100) {
@@ -502,3 +627,6 @@ document.addEventListener('DOMContentLoaded', () => {
         slot.expectedProbability /= totalProbability;
     });
 });
+
+// Add this to your initialization code after setting up the render
+setupHeatMap();
