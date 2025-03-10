@@ -42,7 +42,10 @@ const PEG_OPTIONS = {
     isStatic: true,
     restitution: 0.5,
     friction: 0.001,
-    render: { fillStyle: 'rgb(54 75 74)' }
+    render: { 
+        fillStyle: 'rgb(54 75 74)',
+        opacity: 1
+    }
 };
 
 const START_X   = 198;
@@ -185,18 +188,22 @@ let numSlots       = 0;
 // -------------------------
 // Heat Map Constants
 // -------------------------
-const HEATMAP_RESOLUTION = 10; // Size of each heat map cell in pixels
-const HEATMAP_OPACITY = 0.7;   // Opacity of the heat map overlay
-const MAX_HEAT_VALUE = 100;    // Value at which a cell reaches maximum color intensity
-const HEAT_DECAY = 0.99;       // Decay factor for heat (per frame)
+const HEATMAP_Y_MIN = 205;            // Minimum Y to track heat
+const HEATMAP_Y_MAX = 455;            // Maximum Y to track heat
+const HEATMAP_RESOLUTION = 5;         // Size of each heat map cell (smaller for more detail)
+const HEAT_BLUR_RADIUS = 15;          // Blur radius for continuous effect
+const MAX_HEAT_VALUE = 100;           // Value at which a cell reaches maximum color intensity
+const HEAT_DECAY = 0.9995;             // Decay factor for heat (per frame)
 
 // -------------------------
 // Heat Map Variables
 // -------------------------
-let heatMapData = {};          // Object to store heat values
-let heatMapCanvas = null;      // Canvas for rendering the heat map
-let heatMapContext = null;     // Canvas context
-let showHeatMap = true;        // Toggle for heat map visibility
+let heatMapData = {};                // Object to store heat values
+let heatMapCanvas = null;            // Canvas for rendering the heat map
+let heatMapContext = null;           // Canvas context
+let showHeatMap = true;              // Toggle for heat map visibility
+let heatMapOpacity = 0.7;            // Heat map opacity value
+let disabledPegs = new Set();        // Track which pegs are disabled
 
 // -------------------------
 // Function Definitions
@@ -394,7 +401,7 @@ function setupHeatMap() {
     heatMapCanvas.style.top = '0';
     heatMapCanvas.style.left = '0';
     heatMapCanvas.style.pointerEvents = 'none'; // Allow clicks to pass through
-    heatMapCanvas.style.opacity = HEATMAP_OPACITY;
+    heatMapCanvas.style.opacity = heatMapOpacity;
     
     // Get the parent container
     const simulationContainer = document.querySelector('.simulation-container');
@@ -403,29 +410,33 @@ function setupHeatMap() {
     // Get context and set initial styles
     heatMapContext = heatMapCanvas.getContext('2d');
     
-    // Create UI controls for heatmap
-    const controlsContainer = document.createElement('div');
-    controlsContainer.className = 'heat-map-controls';
-    controlsContainer.innerHTML = `
-        <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" role="switch" id="heatMapToggle" checked>
-            <label class="form-check-label" for="heatMapToggle">Heat Map</label>
-        </div>
-        <button class="btn btn-sm btn-outline-secondary mt-2" id="resetHeatMap">Reset Heat Map</button>
-    `;
-    
-    simulationContainer.appendChild(controlsContainer);
-    
     // Add event listeners
     document.getElementById('heatMapToggle').addEventListener('change', function(e) {
         showHeatMap = e.target.checked;
         heatMapCanvas.style.display = showHeatMap ? 'block' : 'none';
     });
     
+    document.getElementById('heatIntensityRange').addEventListener('input', function(e) {
+        heatMapOpacity = parseFloat(e.target.value);
+        heatMapCanvas.style.opacity = heatMapOpacity;
+    });
+    
     document.getElementById('resetHeatMap').addEventListener('click', function() {
         heatMapData = {};
         drawHeatMap();
     });
+    
+    // Create heat gradient display in CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        .heat-gradient {
+            width: 200px;
+            height: 20px;
+            background: linear-gradient(to right, blue, cyan, green, yellow, red);
+            border-radius: 4px;
+        }
+    `;
+    document.head.appendChild(style);
 }
 
 // Function to update heat map data
@@ -444,23 +455,26 @@ function updateHeatMap() {
     const balls = Composite.allBodies(world).filter(body => 
         body.circleRadius && body.circleRadius === BALL_RADIUS);
     
-    // Track ball positions
+    // Track ball positions - but only in the peg area
     balls.forEach(ball => {
-        // Get the grid cell coordinates
-        const gridX = Math.floor(ball.position.x / HEATMAP_RESOLUTION);
-        const gridY = Math.floor(ball.position.y / HEATMAP_RESOLUTION);
-        const key = `${gridX},${gridY}`;
-        
-        // Increase heat at this position
-        if (!heatMapData[key]) {
-            heatMapData[key] = 0;
-        }
-        
-        heatMapData[key] += 0.5;
-        
-        // Cap the heat value
-        if (heatMapData[key] > MAX_HEAT_VALUE) {
-            heatMapData[key] = MAX_HEAT_VALUE;
+        // Only track balls in the specified Y range
+        if (ball.position.y >= HEATMAP_Y_MIN && ball.position.y <= HEATMAP_Y_MAX) {
+            // Get the grid cell coordinates
+            const gridX = Math.floor(ball.position.x / HEATMAP_RESOLUTION);
+            const gridY = Math.floor(ball.position.y / HEATMAP_RESOLUTION);
+            const key = `${gridX},${gridY}`;
+            
+            // Increase heat at this position
+            if (!heatMapData[key]) {
+                heatMapData[key] = 0;
+            }
+            
+            heatMapData[key] += 1;
+            
+            // Cap the heat value
+            if (heatMapData[key] > MAX_HEAT_VALUE) {
+                heatMapData[key] = MAX_HEAT_VALUE;
+            }
         }
     });
     
@@ -470,12 +484,18 @@ function updateHeatMap() {
     }
 }
 
-// Function to draw the heat map
+// Function to draw the heat map with continuous gradient
 function drawHeatMap() {
     // Clear the canvas
     heatMapContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
-    // Draw each cell with appropriate color
+    // Create an offscreen canvas for the initial heat data
+    const offscreenCanvas = document.createElement('canvas');
+    offscreenCanvas.width = CANVAS_WIDTH;
+    offscreenCanvas.height = CANVAS_HEIGHT;
+    const offscreenContext = offscreenCanvas.getContext('2d');
+    
+    // Draw initial heat points
     Object.keys(heatMapData).forEach(key => {
         const [gridX, gridY] = key.split(',').map(Number);
         const x = gridX * HEATMAP_RESOLUTION;
@@ -487,9 +507,74 @@ function drawHeatMap() {
         const g = Math.floor(255 * Math.min(1, 2 - intensity * 2));
         const b = Math.floor(intensity < 0.5 ? 255 * intensity * 2 : 0);
         
-        heatMapContext.fillStyle = `rgba(${r}, ${g}, ${b}, ${intensity})`;
-        heatMapContext.fillRect(x, y, HEATMAP_RESOLUTION, HEATMAP_RESOLUTION);
+        offscreenContext.fillStyle = `rgba(${r}, ${g}, ${b}, ${intensity})`;
+        offscreenContext.fillRect(x, y, HEATMAP_RESOLUTION, HEATMAP_RESOLUTION);
     });
+    
+    // Apply gaussian blur for continuous effect
+    heatMapContext.filter = `blur(${HEAT_BLUR_RADIUS}px)`;
+    heatMapContext.drawImage(offscreenCanvas, 0, 0);
+    heatMapContext.filter = 'none';
+    
+    // Optional: Add a clip mask to only show heat in the specified Y range
+    heatMapContext.globalCompositeOperation = 'destination-in';
+    heatMapContext.fillStyle = 'black';
+    heatMapContext.fillRect(0, HEATMAP_Y_MIN, CANVAS_WIDTH, HEATMAP_Y_MAX - HEATMAP_Y_MIN);
+    heatMapContext.globalCompositeOperation = 'source-over';
+}
+
+// Add peg interaction
+function setupPegInteraction() {
+    // Add click event to the render canvas
+    render.canvas.addEventListener('click', function(event) {
+        const rect = render.canvas.getBoundingClientRect();
+        const clickX = event.clientX - rect.left;
+        const clickY = event.clientY - rect.top;
+        
+        // Scale coordinates based on render size
+        const scaleX = CANVAS_WIDTH / render.options.width;
+        const scaleY = CANVAS_HEIGHT / render.options.height;
+        const worldX = clickX * scaleX;
+        const worldY = clickY * scaleY;
+        
+        // Check if we clicked on a peg
+        const bodies = Composite.allBodies(world);
+        for (let i = 0; i < bodies.length; i++) {
+            const body = bodies[i];
+            
+            // Only check for pegs (hexagons)
+            if (body.isStatic && body.vertices && body.vertices.length === 6) {
+                // Check if point is inside peg
+                if (Matter.Vertices.contains(body.vertices, { x: worldX, y: worldY })) {
+                    togglePeg(body);
+                    break;
+                }
+            }
+        }
+    });
+}
+
+// Toggle peg collision
+function togglePeg(peg) {
+    const pegId = peg.id;
+    
+    if (disabledPegs.has(pegId)) {
+        // Re-enable the peg
+        disabledPegs.delete(pegId);
+        peg.collisionFilter.category = 0x0001;
+        peg.collisionFilter.mask = 0xFFFFFFFF;
+        // Restore original color
+        peg.render.opacity = 1;
+        peg.render.fillStyle = 'rgb(54 75 74)';
+    } else {
+        // Disable the peg
+        disabledPegs.add(pegId);
+        peg.collisionFilter.category = 0x0002;
+        peg.collisionFilter.mask = 0;
+        // Change appearance to indicate disabled
+        peg.render.opacity = 0.3;
+        peg.render.fillStyle = 'rgb(150 150 150)';
+    }
 }
 
 // -------------------------
@@ -630,3 +715,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Add this to your initialization code after setting up the render
 setupHeatMap();
+setupPegInteraction();
