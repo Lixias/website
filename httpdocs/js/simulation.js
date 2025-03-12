@@ -182,16 +182,19 @@ const runner = Runner.create();
 // State Variables & DOM Elements
 // -------------------------
 
-let currentState        = CycleState.WAITING_FOR_COLLECTION;
-let currentBarWidth     = BAR_FULL_WIDTH;
-let stateStartTime      = Date.now();
+let currentState = CycleState.WAITING_FOR_COLLECTION;
+let currentBarWidth = BAR_FULL_WIDTH;
+let stateStartTime = Date.now();
 
 const counterTableBody = document.getElementById('counterTableBody');
 
-const slotStats    = {};
-const totalBalls   = { count: 0 };
-const stats = { currentBallCount: 0 }; // Add this line
-let numSlots       = 0;
+// Initialize stats objects properly
+const slotStats = {}; // Will hold per-slot statistics
+const stats = {
+    currentBallCount: 0
+};
+const totalBalls = { count: 0 };
+let numSlots = 0;
 
 // -------------------------
 // Heat Map Constants
@@ -570,6 +573,14 @@ function createWarningIcon(x, y) {
     return warningIcon;
 }
 
+// Add this function after createWarningIcon
+function removeWarningIcon(slot) {
+    if (slot.warningIcon) {
+        Composite.remove(world, slot.warningIcon);
+        slot.warningIcon = null;
+    }
+}
+
 // Update ball counts and slot statistics.
 function updateCounts() {
     Object.values(slotStats).forEach(slotStat => {
@@ -599,18 +610,18 @@ function updateCounts() {
         });
     });
 
-    Object.entries(slotStats).forEach(([slotId, stats]) => {
+    Object.entries(slotStats).forEach(([slotId, f_stats]) => {
         const row = document.getElementById(`row-${slotId}`);
-        const totalPercent = (stats.totalCount / totalBalls.count * 100) || 0;
-        const currentPercent = (stats.currentCount / stats.currentBallCount * 100) || 0;
+        const totalPercent = (f_stats.totalCount / totalBalls.count * 100) || 0;
+        const currentPercent = (f_stats.currentCount / stats.currentBallCount * 100) || 0;
         
         row.innerHTML = `
-            <td class="slot-count">Slot ${stats.index}</td>
-            <td class="slot-count">${stats.totalCount}</td>
-            <td class="slot-count">${stats.currentCount}</td>
+            <td class="slot-count">Slot ${f_stats.index}</td>
+            <td class="slot-count">${f_stats.totalCount}</td>
+            <td class="slot-count">${f_stats.currentCount}</td>
             <td class="slot-count">${totalPercent.toFixed(1)}%</td>
             <td class="slot-count">${currentPercent.toFixed(1)}%</td>
-            <td class="slot-count expected">${(stats.expectedProbability * 100).toFixed(1)}%</td>
+            <td class="slot-count expected">${(f_stats.expectedProbability * 100).toFixed(1)}%</td>
         `;
     });
 
@@ -635,48 +646,40 @@ document.getElementById('resetHeatMap').addEventListener('click', function() {
         stats.warningIcon = null;
     });
 
-    // ...existing reset code...
     heatMapData = {};
     drawHeatMap();
 });
 
 // Update the checkSlotDeviations function with better logging and positioning
 function checkSlotDeviations() {
-    //console.log('Checking slot deviations...'); // Debug log
-    
-    Object.entries(slotStats).forEach(([slotId, stats]) => {
-        console.log(stats)
-
-        const totalPercent = (stats.currentCount / stats.currentCount * 100) || 0;
-        const expectedPercent = stats.expectedProbability * 100;
+    if (totalBalls.count < BATCH_SIZE) return;
+    //todo fix this
+    Object.entries(slotStats).forEach(([slotId, slot]) => {
+        const totalPercent = (slot.totalCount / stats.currentBallCount * 100) || 0;
+        const expectedPercent = slot.expectedProbability * 100;
         const deviation = Math.abs(totalPercent - expectedPercent);
         
-        //console.log(`Slot ${stats.index}: Total ${totalPercent.toFixed(1)}%, Expected ${expectedPercent.toFixed(1)}%, Deviation ${deviation.toFixed(1)}%`); // Debug log
-        
-        if (deviation > PROBABILITY_THRESHOLD * 100) {
-            if (!stats.warningIcon) {
-                // Changed how we find the slot - using numerical comparison
-                const slot = Composite.allBodies(world).find(body => 
-                    body.isSensor && 
-                    Math.abs(body.position.x - parseFloat(slotId)) < 0.1
+        // Remove warning if deviation is now acceptable
+        if (deviation <= PROBABILITY_THRESHOLD * 100) {
+            if (slot.warningIcon) {
+                removeWarningIcon(slot);
+                console.log(`Warning removed for slot ${slot.index}, deviation now: ${deviation.toFixed(1)}%`);
+            }
+        } else if (!slot.warningIcon) { // Add warning if needed
+            const slotBody = Composite.allBodies(world).find(body => 
+                body.isSensor && 
+                Math.abs(body.position.x - parseFloat(slotId)) < 0.1
+            );
+            
+            if (slotBody) {
+                const warningIcon = createWarningIcon(
+                    slotBody.position.x, 
+                    slotBody.bounds.min.y + 50
                 );
                 
-                if (slot) {
-                    //console.log(`Creating warning for slot ${stats.index}`); // Debug log
-                    const warningIcon = createWarningIcon(
-                        slot.position.x, 
-                        slot.bounds.min.y + 50 // Position above the slot
-                    );
-                    
-                    // Rotate the triangle to point downward
-                    Matter.Body.rotate(warningIcon, Math.PI);
-                    
-                    stats.warningIcon = warningIcon;
-                    Composite.add(world, warningIcon);
-                    console.log(`Warning added for slot ${stats.index}, deviation: ${totalPercent.toFixed(1)}% - ${expectedPercent.toFixed(1)}% =  ${deviation.toFixed(1)}%`); // Debug log
-                } else {
-                    console.log(`Could not find slot body at x: ${slotId}`); // More detailed debug log
-                }
+                slot.warningIcon = warningIcon;
+                Composite.add(world, warningIcon);
+                console.log(`Warning added for slot ${slot.index}, deviation: ${deviation.toFixed(1)}%`);
             }
         }
     });
@@ -726,7 +729,8 @@ for (let row = 0; row <= PEG_ROWS; row++) {
               totalCount: 0,
               currentCount: 0,
               index: slotIndex,
-              expectedProbability: 0
+              expectedProbability: 0,
+              warningIcon: null
           };
           
           slot.slotId = slotX;
