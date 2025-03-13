@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize git info
     fetchGitInfo();
-S    
+    
     // Set copyright year
     document.getElementById('copyright-year').textContent = new Date().getFullYear();
 });

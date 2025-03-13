@@ -66,3 +66,32 @@
 .stats-summary p {
     margin-bottom: 0.25rem;
 }
+
+.heat-map-controls {
+    background: transparent;
+    padding: 0;
+    margin-bottom: 1rem;
+    text-align: left;
+}
+
+.heat-map-controls .form-check {
+    margin-bottom: 0;
+}
+
+.heat-map-controls .btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.heat-gradient {
+    width: 200px;
+    height: 20px;
+    background: linear-gradient(to right, blue, cyan, green, yellow, red);
+    border-radius: 4px;
+    margin: 0 10px;
+}
+
+#heatmap-tab-pane p {
+    color: var(--bs-body-color);
+    opacity: 0.8;
+}

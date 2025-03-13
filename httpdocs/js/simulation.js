@@ -5,7 +5,17 @@ import Matter from "https://cdn.jsdelivr.net/npm/matter-js@0.19.0/+esm";
 import 'https://cdn.jsdelivr.net/npm/poly-decomp@0.3.0/build/decomp.min.js';
 import 'https://cdn.jsdelivr.net/npm/pathseg@1.2.1/pathseg.min.js';
 
-const { Engine, Render, Runner, Bodies, Composite, Svg, Events, Mouse, MouseConstraint } = Matter;
+const { 
+    Engine, 
+    Render, 
+    Runner, 
+    Bodies, 
+    Body,     // Add this
+    Composite, 
+    Events, 
+    Mouse, 
+    MouseConstraint 
+} = Matter;
 
 // -------------------------
 // Constants
@@ -17,7 +27,6 @@ const CANVAS_HEIGHT = 750;
 
 // Simulation Constants
 const BALL_RADIUS   = 4;
-const BALL_DIAMETER = BALL_RADIUS * 2;
 const BALL_OPTIONS  = {
     restitution: 0.5,
     friction: 0.001,
@@ -42,7 +51,10 @@ const PEG_OPTIONS = {
     isStatic: true,
     restitution: 0.5,
     friction: 0.001,
-    render: { fillStyle: 'rgb(54 75 74)' }
+    render: { 
+        fillStyle: 'rgb(54 75 74)',
+        opacity: 1
+    }
 };
 
 const START_X   = 198;
@@ -84,7 +96,6 @@ const TRANSITION_TIME = 500; // 500ms for bar transition
 const VERTEX_PATH = "500 400 L 555.4256 400 L 555.4256 496 L 513.8564 568 L 652.4205 808 L 652.4205 976 L 527.7128 1024 L 527.7128 1048 L 666.2769 1000 L 666.2769 808 L 569.282 496 L 569.282 376 L 430.718 376 L 430.718 496 L 333.7231 808 L 333.7231 1000 L 500 1048 L 500 1024 L 347.5795 976 L 347.5795 808 L 486.1436 568 L 444.5744 496 L 444.5744 400";
 
 // Check for user's color scheme preference.
-const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
 // Define frame styling based on color scheme.
 const FRAME_OPTIONS = {
@@ -170,17 +181,44 @@ const runner = Runner.create();
 // -------------------------
 // State Variables & DOM Elements
 // -------------------------
-let currentBallCount    = 0;
-let currentState        = CycleState.WAITING_FOR_COLLECTION;
-let previousState       = "Initializing";
-let currentBarWidth     = BAR_FULL_WIDTH;
-let stateStartTime      = Date.now();
+
+let currentState = CycleState.WAITING_FOR_COLLECTION;
+let currentBarWidth = BAR_FULL_WIDTH;
+let stateStartTime = Date.now();
 
 const counterTableBody = document.getElementById('counterTableBody');
 
-const slotStats    = {};
-const totalBalls   = { count: 0 };
-let numSlots       = 0;
+// Initialize stats objects properly
+const slotStats = {}; // Will hold per-slot statistics
+const stats = {
+    currentBallCount: 0
+};
+const totalBalls = { count: 0 };
+let numSlots = 0;
+
+// -------------------------
+// Heat Map Constants
+// -------------------------
+const HEATMAP_Y_MIN = 205;            // Minimum Y to track heat
+const HEATMAP_Y_MAX = 455;            // Maximum Y to track heat
+const HEATMAP_RESOLUTION = 3;         // Size of each heat map cell (smaller for more detail)
+const HEAT_BLUR_RADIUS = 9;          // Blur radius for continuous effect
+const MAX_HEAT_VALUE = 100;           // Value at which a cell reaches maximum color intensity
+const HEAT_DECAY = 0.9995;             // Decay factor for heat (per frame)
+
+// Add these constants at the top with other constants
+const PROBABILITY_THRESHOLD = 0.1; //deviation threshold
+const WARNING_SIZE = 15; // Size of warning icon in pixels
+
+// -------------------------
+// Heat Map Variables
+// -------------------------
+let heatMapData = {};                // Object to store heat values
+let heatMapCanvas = null;            // Canvas for rendering the heat map
+let heatMapContext = null;           // Canvas context
+let showHeatMap = false;              // Toggle for heat map visibility
+let heatMapOpacity = 0.7;            // Heat map opacity value
+let disabledPegs = new Set();        // Track which pegs are disabled
 
 // -------------------------
 // Function Definitions
@@ -208,85 +246,6 @@ function calculateBinomialProbability(slotIndex, totalSlots) {
     return binomialCoeff(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
 }
 
-// Update slot statistics in the UI.
-function updateStats() {
-    let currentTotal = 0;
-    Object.values(slotStats).forEach(slot => {
-        currentTotal += slot.currentCount;
-    });
-
-    Object.entries(slotStats).forEach(([slotId, stats]) => {
-        const row = document.getElementById(`row-${slotId}`);
-        const totalPercent = (stats.totalCount / totalBalls.count * 100) || 0;
-        const currentPercent = (stats.currentCount / currentTotal * 100) || 0;
-        
-        row.innerHTML = `
-            <td class="slot-count">Slot ${stats.index}</td>
-            <td class="slot-count">${stats.totalCount}</td>
-            <td class="slot-count">${stats.currentCount}</td>
-            <td class="slot-count">${totalPercent.toFixed(1)}%</td>
-            <td class="slot-count">${currentPercent.toFixed(1)}%</td>
-            <td class="slot-count expected">${(stats.expectedProbability * 100).toFixed(1)}%</td>
-        `;
-    });
-
-    document.getElementById('totalBalls').textContent = totalBalls.count;
-    document.getElementById('currentBalls').textContent = currentTotal;
-}
-
-// Update ball counts and slot statistics.
-function updateCounts() {
-    Object.values(slotStats).forEach(stats => {
-        stats.currentCount = 0;
-    });
-
-    const bodies = Composite.allBodies(world);
-    const balls = bodies.filter(body => body.circleRadius);
-    const slots = bodies.filter(body => body.slotId);
-    
-    currentBallCount = 0;
-    let newBallsProcessed = false;
-
-    balls.forEach(ball => {
-        slots.forEach(slot => {
-            if (Matter.Bounds.overlaps(ball.bounds, slot.bounds)) {
-                slotStats[slot.slotId].currentCount++;
-                currentBallCount++;
-                
-                if (!ball.counted && currentState === CycleState.RELEASING) {
-                    slotStats[slot.slotId].totalCount++;
-                    totalBalls.count++;
-                    ball.counted = true;
-                    newBallsProcessed = true;
-                }
-            }
-        });
-    });
-
-    Object.entries(slotStats).forEach(([slotId, stats]) => {
-        const row = document.getElementById(`row-${slotId}`);
-        const totalPercent = (stats.totalCount / totalBalls.count * 100) || 0;
-        const currentPercent = (stats.currentCount / currentBallCount * 100) || 0;
-        
-        row.innerHTML = `
-            <td class="slot-count">Slot ${stats.index}</td>
-            <td class="slot-count">${stats.totalCount}</td>
-            <td class="slot-count">${stats.currentCount}</td>
-            <td class="slot-count">${totalPercent.toFixed(1)}%</td>
-            <td class="slot-count">${currentPercent.toFixed(1)}%</td>
-            <td class="slot-count expected">${(stats.expectedProbability * 100).toFixed(1)}%</td>
-        `;
-    });
-
-    document.getElementById('totalBalls').textContent = totalBalls.count;
-    document.getElementById('currentBalls').textContent = currentBallCount;
-
-    // After updating all slot statistics
-    updateSlotData(slotStats);
-    
-    return { currentBallCount, newBallsProcessed };
-}
-
 // Manage simulation cycle based on current state.
 function manageCycle() {
     const currentTime = Date.now();
@@ -296,11 +255,11 @@ function manageCycle() {
     
     switch (currentState) {
         case CycleState.WAITING_FOR_COLLECTION:
-            if (currentBallCount === BATCH_SIZE) {
+            if (stats.currentBallCount === BATCH_SIZE) {
                 nextState = CycleState.HOLDING;
             }
             if (currentTime - stateStartTime > 15000) {
-                const lostBalls = BATCH_SIZE - currentBallCount;
+                const lostBalls = BATCH_SIZE - stats.currentBallCount;
                 console.log(`Lost ${lostBalls} balls after 15s timeout`);
                 recordLostBalls(lostBalls);
                 nextState = CycleState.RELEASING;
@@ -311,12 +270,14 @@ function manageCycle() {
         case CycleState.HOLDING:
             if (currentTime - stateStartTime > HOLDING_TIME) {
                 nextState = CycleState.RELEASING;
+                // Check deviations here before transitioning
+                checkSlotDeviations();
                 animateBarWidth(BAR_FULL_WIDTH, BAR_SLIM_WIDTH, TRANSITION_TIME);
             }
             break;
 
         case CycleState.RELEASING:
-            if (currentBallCount === 0) {
+            if (stats.currentBallCount === 0) {
                 animateBarWidth(BAR_SLIM_WIDTH, BAR_FULL_WIDTH, TRANSITION_TIME);
                 nextState = CycleState.REACTIVATING;
             }
@@ -368,6 +329,363 @@ function animateBarWidth(startWidth, endWidth, duration, callback) {
     requestAnimationFrame(animate);
 }
 
+// Create heat map setup function
+function setupHeatMap() {
+    // Create heat map canvas
+    heatMapCanvas = document.createElement('canvas');
+    heatMapCanvas.width = CANVAS_WIDTH;
+    heatMapCanvas.height = CANVAS_HEIGHT;
+    heatMapCanvas.style.position = 'absolute';
+    heatMapCanvas.style.top = '0';
+    heatMapCanvas.style.left = '0';
+    heatMapCanvas.style.pointerEvents = 'none'; // Allow clicks to pass through
+    heatMapCanvas.style.opacity = heatMapOpacity;
+    
+    // Get the parent container
+    const simulationContainer = document.querySelector('.simulation-container');
+    simulationContainer.appendChild(heatMapCanvas);
+    
+    // Get context and set initial styles
+    heatMapContext = heatMapCanvas.getContext('2d');
+    
+    // Add event listeners
+    document.getElementById('heatMapToggle').addEventListener('change', function(e) {
+        showHeatMap = e.target.checked;
+        heatMapCanvas.style.display = showHeatMap ? 'block' : 'none';
+    });
+    
+    document.getElementById('heatIntensityRange').addEventListener('input', function(e) {
+        heatMapOpacity = parseFloat(e.target.value);
+        heatMapCanvas.style.opacity = heatMapOpacity;
+    });
+    
+    document.getElementById('resetHeatMap').addEventListener('click', function() {
+        heatMapData = {};
+        drawHeatMap();
+    });
+    
+    // Create heat gradient display in CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        .heat-gradient {
+            width: 200px;
+            height: 20px;
+            background: linear-gradient(to right, blue, cyan, green, yellow, red);
+            border-radius: 4px;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Function to update heat map data
+function updateHeatMap() {
+    // Decay all heat values slightly each frame
+    Object.keys(heatMapData).forEach(key => {
+        heatMapData[key] *= HEAT_DECAY;
+        
+        // Remove very small values to prevent memory buildup
+        if (heatMapData[key] < 0.1) {
+            delete heatMapData[key];
+        }
+    });
+    
+    // Get all balls
+    const balls = Composite.allBodies(world).filter(body => 
+        body.circleRadius && body.circleRadius === BALL_RADIUS);
+    
+    // Track ball positions - but only in the peg area
+    balls.forEach(ball => {
+        // Only track balls in the specified Y range
+        if (ball.position.y >= HEATMAP_Y_MIN && ball.position.y <= HEATMAP_Y_MAX) {
+            // Get the grid cell coordinates
+            const gridX = Math.floor(ball.position.x / HEATMAP_RESOLUTION);
+            const gridY = Math.floor(ball.position.y / HEATMAP_RESOLUTION);
+            const key = `${gridX},${gridY}`;
+            
+            // Increase heat at this position
+            if (!heatMapData[key]) {
+                heatMapData[key] = 0;
+            }
+            
+            heatMapData[key] += 3;
+            
+            // Cap the heat value
+            if (heatMapData[key] > MAX_HEAT_VALUE) {
+                heatMapData[key] = MAX_HEAT_VALUE;
+            }
+        }
+    });
+    
+    // Only redraw the heatmap if it's visible
+    if (showHeatMap) {
+        drawHeatMap();
+    }
+}
+
+// Function to draw the heat map with continuous gradient
+function drawHeatMap() {
+    // Clear the canvas
+    heatMapContext.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    
+    // Find the current maximum heat value
+    const currentMaxHeat = Math.max(
+        0.1, // Prevent division by zero
+        ...Object.values(heatMapData)
+    );
+    
+    // Create an offscreen canvas for the initial heat data
+    const offscreenCanvas = document.createElement('canvas');
+    offscreenCanvas.width = CANVAS_WIDTH;
+    offscreenCanvas.height = CANVAS_HEIGHT;
+    const offscreenContext = offscreenCanvas.getContext('2d');
+    
+    // Draw initial heat points
+    Object.keys(heatMapData).forEach(key => {
+        const [gridX, gridY] = key.split(',').map(Number);
+        const x = gridX * HEATMAP_RESOLUTION;
+        const y = gridY * HEATMAP_RESOLUTION;
+        const intensity = heatMapData[key] / currentMaxHeat; // Normalize based on current max
+        
+        // Create heat color (blue to red gradient)
+        const r = Math.floor(255 * Math.min(1, intensity * 2));
+        const g = Math.floor(255 * Math.min(1, 2 - intensity * 2));
+        const b = Math.floor(intensity < 0.5 ? 255 * intensity * 2 : 0);
+        
+        offscreenContext.fillStyle = `rgba(${r}, ${g}, ${b}, ${intensity})`;
+        offscreenContext.fillRect(x, y, HEATMAP_RESOLUTION, HEATMAP_RESOLUTION);
+    });
+    
+    // Apply gaussian blur for continuous effect
+    heatMapContext.filter = `blur(${HEAT_BLUR_RADIUS}px)`;
+    heatMapContext.drawImage(offscreenCanvas, 0, 0);
+    heatMapContext.filter = 'none';
+    
+    // Clip to specified Y range
+    heatMapContext.globalCompositeOperation = 'destination-in';
+    heatMapContext.fillStyle = 'black';
+    heatMapContext.fillRect(0, HEATMAP_Y_MIN, CANVAS_WIDTH, HEATMAP_Y_MAX - HEATMAP_Y_MIN);
+    heatMapContext.globalCompositeOperation = 'source-over';
+}
+
+// Add peg interaction
+function setupPegInteraction() {
+    // Add click event to the render canvas
+    render.canvas.addEventListener('click', function(event) {
+        const rect = render.canvas.getBoundingClientRect();
+        const clickX = event.clientX - rect.left;
+        const clickY = event.clientY - rect.top;
+        
+        // Scale coordinates based on render size
+        const scaleX = CANVAS_WIDTH / render.options.width;
+        const scaleY = CANVAS_HEIGHT / render.options.height;
+        const worldX = clickX * scaleX;
+        const worldY = clickY * scaleY;
+        
+        // Check if we clicked on a peg
+        const bodies = Composite.allBodies(world);
+        for (let i = 0; i < bodies.length; i++) {
+            const body = bodies[i];
+            
+            // Only check for pegs (hexagons)
+            if (body.isStatic && body.vertices && body.vertices.length === 6) {
+                // Check if point is inside peg
+                if (Matter.Vertices.contains(body.vertices, { x: worldX, y: worldY })) {
+                    togglePeg(body);
+                    break;
+                }
+            }
+        }
+    });
+}
+
+// Toggle peg collision
+function togglePeg(peg) {
+    const pegId = peg.id;
+    
+    if (disabledPegs.has(pegId)) {
+        // Re-enable the peg
+        disabledPegs.delete(pegId);
+        peg.collisionFilter.category = 0x0001;
+        peg.collisionFilter.mask = 0xFFFFFFFF;
+        // Restore original color
+        peg.render.opacity = 1;
+        peg.render.fillStyle = 'rgb(54 75 74)';
+    } else {
+        // Disable the peg
+        disabledPegs.add(pegId);
+        peg.collisionFilter.category = 0x0002;
+        peg.collisionFilter.mask = 0;
+        // Change appearance to indicate disabled
+        peg.render.opacity = 0.3;
+        peg.render.fillStyle = 'rgb(150 150 150)';
+    }
+}
+
+// Update the createWarningIcon function to make warnings more visible
+function createWarningIcon(x, y) {
+    // Create a compound body for the warning sign
+    const triangle = Bodies.polygon(x, y, 3, WARNING_SIZE, {
+        isStatic: true,
+        isSensor: true,
+        render: {
+            fillStyle: '#ffc107', // Bootstrap warning yellow
+            strokeStyle: '#000',
+            lineWidth: 2,
+            opacity: 0.8
+        }
+    });
+
+    // Rotate the entire compound body -90 degrees
+    Body.rotate(triangle, -Math.PI/2);
+
+    // Create exclamation mark using two rectangles - positioned for vertical orientation
+    const exclamationDot = Bodies.circle(x, y-WARNING_SIZE/5, WARNING_SIZE/6, {
+        isStatic: true,
+        isSensor: true,
+        render: {
+            fillStyle: '#000',
+            opacity: 0.8
+        }
+    });
+
+    const exclamationLine = Bodies.rectangle(x, y+WARNING_SIZE/4, WARNING_SIZE/4, WARNING_SIZE/2, {
+        isStatic: true,
+        isSensor: true,
+        render: {
+            fillStyle: '#000',
+            opacity: 0.8
+        }
+    });
+
+    // Create compound body
+    const warningIcon = Body.create({
+        parts: [triangle, exclamationDot, exclamationLine],
+        isStatic: true,
+        isSensor: true,
+        collisionFilter: {
+            group: -1,
+            category: 0x0002,
+            mask: 0x0000
+        },
+        label: 'warning'
+    });
+
+    // Rotate the entire compound body 180 degrees
+    Body.rotate(warningIcon, Math.PI);
+
+    return warningIcon;
+}
+
+// Add this function after createWarningIcon
+function removeWarningIcon(slot) {
+    if (slot.warningIcon) {
+        Composite.remove(world, slot.warningIcon);
+        slot.warningIcon = null;
+    }
+}
+
+// Update ball counts and slot statistics.
+function updateCounts() {
+    Object.values(slotStats).forEach(slotStat => {
+        slotStat.currentCount = 0;
+    });
+
+    const bodies = Composite.allBodies(world);
+    const balls = bodies.filter(body => body.circleRadius);
+    const slots = bodies.filter(body => body.slotId);
+    
+    stats.currentBallCount = 0;
+    let newBallsProcessed = false;
+
+    balls.forEach(ball => {
+        slots.forEach(slot => {
+            if (Matter.Bounds.overlaps(ball.bounds, slot.bounds)) {
+                slotStats[slot.slotId].currentCount++;
+                stats.currentBallCount++;
+                
+                if (!ball.counted && currentState === CycleState.RELEASING) {
+                    slotStats[slot.slotId].totalCount++;
+                    totalBalls.count++;
+                    ball.counted = true;
+                    newBallsProcessed = true;
+                }
+            }
+        });
+    });
+
+    Object.entries(slotStats).forEach(([slotId, f_stats]) => {
+        const row = document.getElementById(`row-${slotId}`);
+        const totalPercent = (f_stats.totalCount / totalBalls.count * 100) || 0;
+        const currentPercent = (f_stats.currentCount / stats.currentBallCount * 100) || 0;
+        
+        row.innerHTML = `
+            <td class="slot-count">Slot ${f_stats.index}</td>
+            <td class="slot-count">${f_stats.totalCount}</td>
+            <td class="slot-count">${f_stats.currentCount}</td>
+            <td class="slot-count">${totalPercent.toFixed(1)}%</td>
+            <td class="slot-count">${currentPercent.toFixed(1)}%</td>
+            <td class="slot-count expected">${(f_stats.expectedProbability * 100).toFixed(1)}%</td>
+        `;
+    });
+
+    document.getElementById('totalBalls').textContent = totalBalls.count;
+    document.getElementById('currentBalls').textContent = stats.currentBallCount;
+
+    updateSlotData(slotStats);
+    
+    return { currentBallCount: stats.currentBallCount, newBallsProcessed };
+}
+
+// Modify the reset handler to remove warnings
+document.getElementById('resetHeatMap').addEventListener('click', function() {
+    // Remove all warning icons
+    const warningsToRemove = Composite.allBodies(world).filter(body => body.label === 'warning');
+    warningsToRemove.forEach(warning => {
+        Composite.remove(world, warning);
+    });
+    
+    // Clear warning references
+    Object.values(slotStats).forEach(stats => {
+        stats.warningIcon = null;
+    });
+
+    heatMapData = {};
+    drawHeatMap();
+});
+
+// Update the checkSlotDeviations function with better logging and positioning
+function checkSlotDeviations() {
+    Object.entries(slotStats).forEach(([slotId, slot]) => {
+        const totalPercent = (slot.currentCount / stats.currentBallCount * 100) || 0;
+        const expectedPercent = slot.expectedProbability * 100;
+        const deviation = Math.abs(totalPercent - expectedPercent);
+
+        // Remove warning if deviation is now acceptable
+        if (deviation <= PROBABILITY_THRESHOLD * 100) {
+            if (slot.warningIcon) {
+                removeWarningIcon(slot);
+                console.log(`Warning removed for slot ${slot.index}, deviation now: ${deviation.toFixed(1)}%`);
+            }
+        } else if (!slot.warningIcon) { // Add warning if needed
+            const slotBody = Composite.allBodies(world).find(body => 
+                body.isSensor && 
+                Math.abs(body.position.x - parseFloat(slotId)) < 0.1
+            );
+            
+            if (slotBody) {
+                const warningIcon = createWarningIcon(
+                    slotBody.position.x, 
+                    slotBody.bounds.min.y + 50
+                );
+                
+                slot.warningIcon = warningIcon;
+                Composite.add(world, warningIcon);
+                console.log(`Warning added for slot ${slot.index}, deviation: ${deviation.toFixed(1)}%`);
+            }
+        }
+    });
+}
+
 // -------------------------
 // Main Simulation Setup
 // -------------------------
@@ -412,7 +730,8 @@ for (let row = 0; row <= PEG_ROWS; row++) {
               totalCount: 0,
               currentCount: 0,
               index: slotIndex,
-              expectedProbability: 0
+              expectedProbability: 0,
+              warningIcon: null
           };
           
           slot.slotId = slotX;
@@ -484,6 +803,7 @@ document.addEventListener('click', function(event) {
 Events.on(engine, 'afterUpdate', function() {
     updateCounts();
     manageCycle();
+    updateHeatMap();
     
     Composite.allBodies(world).forEach(body => {
         if (!body.isStatic && body.position.y > CANVAS_HEIGHT + 100) {
@@ -501,4 +821,25 @@ document.addEventListener('DOMContentLoaded', () => {
     Object.values(slotStats).forEach(slot => {
         slot.expectedProbability /= totalProbability;
     });
+});
+
+// Add this to your initialization code after setting up the render
+setupHeatMap();
+setupPegInteraction();
+
+// Keep this event listener
+document.getElementById('resetHeatMap').addEventListener('click', function() {
+    // Remove all warning icons
+    const warningsToRemove = Composite.allBodies(world).filter(body => body.label === 'warning');
+    warningsToRemove.forEach(warning => {
+        Composite.remove(world, warning);
+    });
+    
+    // Clear warning references
+    Object.values(slotStats).forEach(stats => {
+        stats.warningIcon = null;
+    });
+
+    heatMapData = {};
+    drawHeatMap();
 });

@@ -83,6 +83,9 @@
                                     <li class="nav-item" role="presentation">
                                         <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline-tab-pane" type="button" role="tab" aria-controls="timeline-tab-pane" aria-selected="false">Timeline</button>
                                     </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="heatmap-tab" data-bs-toggle="tab" data-bs-target="#heatmap-tab-pane" type="button" role="tab" aria-controls="heatmap-tab-pane" aria-selected="false">Heat Map</button>
+                                    </li>
                                 </ul>
                                 <div class="tab-content pt-3" id="analyticsTabContent">
                                     <!-- Table Tab -->
@@ -114,6 +117,29 @@
                                     <!-- Timeline Tab -->
                                     <div class="tab-pane fade" id="timeline-tab-pane" role="tabpanel" aria-labelledby="timeline-tab" tabindex="0">
                                         <div id="timelineChart" style="width:100%; height:300px;"></div>
+                                    </div>
+                                    
+                                    <!-- Heat Map Tab -->
+                                    <div class="tab-pane fade" id="heatmap-tab-pane" role="tabpanel" aria-labelledby="heatmap-tab" tabindex="0">
+                                        <div class="heat-map-controls">
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" role="switch" id="heatMapToggle" >
+                                                <label class="form-check-label" for="heatMapToggle">Show Heat Map</label>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="heatIntensityRange" class="form-label">Heat Intensity</label>
+                                                <input type="range" class="form-range" min="0.1" max="1.0" step="0.1" value="0.7" id="heatIntensityRange">
+                                            </div>
+                                            <button class="btn btn-outline-secondary" id="resetHeatMap">Reset Heat Map</button>
+                                        </div>
+                                        <div class="mt-3">
+                                            <p class="text-start">Click on pegs to toggle their collision properties.</p>
+                                            <div class="d-flex justify-content-between">
+                                                <span>Low Traffic</span>
+                                                <div class="heat-gradient"></div>
+                                                <span>High Traffic</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
