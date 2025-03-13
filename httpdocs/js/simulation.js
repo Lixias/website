@@ -216,7 +216,7 @@ const WARNING_SIZE = 15; // Size of warning icon in pixels
 let heatMapData = {};                // Object to store heat values
 let heatMapCanvas = null;            // Canvas for rendering the heat map
 let heatMapContext = null;           // Canvas context
-let showHeatMap = true;              // Toggle for heat map visibility
+let showHeatMap = false;              // Toggle for heat map visibility
 let heatMapOpacity = 0.7;            // Heat map opacity value
 let disabledPegs = new Set();        // Track which pegs are disabled
 
@@ -407,7 +407,7 @@ function updateHeatMap() {
                 heatMapData[key] = 0;
             }
             
-            heatMapData[key] += 1;
+            heatMapData[key] += 3;
             
             // Cap the heat value
             if (heatMapData[key] > MAX_HEAT_VALUE) {
@@ -570,6 +570,9 @@ function createWarningIcon(x, y) {
         label: 'warning'
     });
 
+    // Rotate the entire compound body 180 degrees
+    Body.rotate(warningIcon, Math.PI);
+
     return warningIcon;
 }
 
@@ -652,13 +655,11 @@ document.getElementById('resetHeatMap').addEventListener('click', function() {
 
 // Update the checkSlotDeviations function with better logging and positioning
 function checkSlotDeviations() {
-    if (totalBalls.count < BATCH_SIZE) return;
-    //todo fix this
     Object.entries(slotStats).forEach(([slotId, slot]) => {
-        const totalPercent = (slot.totalCount / stats.currentBallCount * 100) || 0;
+        const totalPercent = (slot.currentCount / stats.currentBallCount * 100) || 0;
         const expectedPercent = slot.expectedProbability * 100;
         const deviation = Math.abs(totalPercent - expectedPercent);
-        
+
         // Remove warning if deviation is now acceptable
         if (deviation <= PROBABILITY_THRESHOLD * 100) {
             if (slot.warningIcon) {
