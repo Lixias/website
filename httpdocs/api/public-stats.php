@@ -210,6 +210,16 @@ function fetchProtectedStatsProbe(array $config): array
         ];
     }
 
+    $headers = [];
+    foreach (($http_response_header ?? []) as $header) {
+        if (stripos($header, 'set-cookie:') === 0 || stripos($header, 'authorization:') === 0) {
+            continue;
+        }
+        $headers[] = $header;
+    }
+
+    $preview = mb_substr(cleanText($html), 0, 220, 'UTF-8');
+
     try {
         $payload = parseAwstatsSummary($html);
         assertCurrentMonth($payload);
@@ -219,6 +229,7 @@ function fetchProtectedStatsProbe(array $config): array
             'stage' => 'parse',
             'httpStatus' => $status,
             'bytes' => strlen($html),
+            'headers' => $headers,
             'period' => $payload['period'],
         ];
     } catch (Throwable $error) {
@@ -227,6 +238,8 @@ function fetchProtectedStatsProbe(array $config): array
             'stage' => 'parse',
             'httpStatus' => $status,
             'bytes' => strlen($html),
+            'headers' => $headers,
+            'preview' => $preview,
             'message' => $error->getMessage(),
         ];
     }
