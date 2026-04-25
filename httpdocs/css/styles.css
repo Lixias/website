@@ -264,6 +264,29 @@ main {
   align-self: flex-end;
 }
 
+.analytics-card {
+  align-self: flex-start;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 16px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.metric-grid span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.metric-grid strong {
+  margin-top: 0;
+  text-align: right;
+}
+
 .about-section,
 .contact-section {
   scroll-margin-top: 96px;
