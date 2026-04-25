@@ -5,10 +5,58 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: public, max-age=300');
 
-const CONFIG_PATH = __DIR__ . '/../../private/awstats-auth.php';
-const SAMPLE_PATH = __DIR__ . '/../../private/awstats-sample.txt';
-const CACHE_PATH = __DIR__ . '/../../private/public-stats-cache.json';
 const CACHE_TTL_SECONDS = 900;
+
+function privatePathCandidates(string $file): array
+{
+    return [
+        __DIR__ . '/../../private/' . $file,
+        __DIR__ . '/../private/' . $file,
+        __DIR__ . '/' . $file,
+    ];
+}
+
+function privatePath(string $file): string
+{
+    $paths = privatePathCandidates($file);
+    foreach ($paths as $path) {
+        if (is_readable($path)) {
+            return $path;
+        }
+    }
+
+    return $paths[0];
+}
+
+function privatePathDiagnostics(string $file): array
+{
+    return array_map(static function (string $path): array {
+        return [
+            'path' => $path,
+            'exists' => file_exists($path),
+            'readable' => is_readable($path),
+            'directoryExists' => is_dir(dirname($path)),
+            'directoryReadable' => is_readable(dirname($path)),
+        ];
+    }, privatePathCandidates($file));
+}
+
+function writablePrivatePath(string $file): string
+{
+    $paths = [
+        __DIR__ . '/../../private/' . $file,
+        __DIR__ . '/../private/' . $file,
+    ];
+
+    foreach ($paths as $path) {
+        $directory = dirname($path);
+        if (is_dir($directory) && is_writable($directory)) {
+            return $path;
+        }
+    }
+
+    return $paths[0];
+}
 
 function respond(array $payload, int $statusCode = 200): void
 {
@@ -72,11 +120,12 @@ function assertCurrentMonth(array $payload): void
 
 function readCache(): ?array
 {
-    if (!is_readable(CACHE_PATH)) {
+    $cachePath = privatePath('public-stats-cache.json');
+    if (!is_readable($cachePath)) {
         return null;
     }
 
-    $raw = file_get_contents(CACHE_PATH);
+    $raw = file_get_contents($cachePath);
     if ($raw === false) {
         return null;
     }
@@ -100,7 +149,7 @@ function writeCache(array $payload): void
         'payload' => $payload,
     ];
 
-    @file_put_contents(CACHE_PATH, json_encode($cache, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    @file_put_contents(writablePrivatePath('public-stats-cache.json'), json_encode($cache, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 }
 
 function fetchProtectedStats(array $config): string
@@ -185,11 +234,12 @@ function fetchProtectedStatsProbe(array $config): array
 
 try {
     if (isset($_GET['sample'])) {
-        if (!is_readable(SAMPLE_PATH)) {
+        $samplePath = privatePath('awstats-sample.txt');
+        if (!is_readable($samplePath)) {
             respond(['available' => false, 'message' => 'Stats sample unavailable'], 503);
         }
 
-        $sample = file_get_contents(SAMPLE_PATH);
+        $sample = file_get_contents($samplePath);
         if ($sample === false) {
             respond(['available' => false, 'message' => 'Stats sample unavailable'], 503);
         }
@@ -200,15 +250,17 @@ try {
     }
 
     if (isset($_GET['probe'])) {
-        if (!is_readable(CONFIG_PATH)) {
+        $configPath = privatePath('awstats-auth.php');
+        if (!is_readable($configPath)) {
             respond([
                 'ok' => false,
                 'stage' => 'config',
                 'message' => 'Stats config unavailable',
+                'checked' => privatePathDiagnostics('awstats-auth.php'),
             ], 503);
         }
 
-        $config = require CONFIG_PATH;
+        $config = require $configPath;
         if (!is_array($config)) {
             respond([
                 'ok' => false,
@@ -230,11 +282,12 @@ try {
         }
     }
 
-    if (!is_readable(CONFIG_PATH)) {
+    $configPath = privatePath('awstats-auth.php');
+    if (!is_readable($configPath)) {
         respond(['available' => false, 'message' => 'Stats unavailable'], 503);
     }
 
-    $config = require CONFIG_PATH;
+    $config = require $configPath;
     if (!is_array($config)) {
         throw new RuntimeException('AWStats configuration is invalid.');
     }
