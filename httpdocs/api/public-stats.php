@@ -103,7 +103,7 @@ function parseAwstatsSummary(string $html): array
     $lastVisit = firstMatch('/Last visit\s+(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s+-\s*(\d{2}:\d{2})/i', $text);
     $lastVisitTime = firstMatch('/Last visit\s+\d{1,2}\s+[A-Za-z]{3}\s+\d{4}\s+-\s*(\d{2}:\d{2})/i', $text);
 
-    $trafficPattern = '/Viewed traffic\s*\*?\s+([\d,]+)\s+([\d,]+)\s*\(([\d.]+)\s+visits\/visitor\)/i';
+    $trafficPattern = '/Viewed traffic\s*\*?\s*([\d,]+)\s+([\d,]+)\s*\(([\d.]+)\s+visits\/visitor\)/i';
     if (!preg_match($trafficPattern, $text, $trafficMatches)) {
         throw new RuntimeException('AWStats viewed traffic summary was not found.');
     }
