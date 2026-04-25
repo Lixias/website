@@ -67,9 +67,22 @@ function respond(array $payload, int $statusCode = 200): void
 
 function cleanText(string $html): string
 {
+    $html = preg_replace('/<script\b[^>]*>.*?<\/script>/is', ' ', $html) ?? $html;
+    $html = preg_replace('/<style\b[^>]*>.*?<\/style>/is', ' ', $html) ?? $html;
     $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
     $text = preg_replace('/\s+/u', ' ', $text) ?? $text;
     return trim($text);
+}
+
+function textSnippet(string $text, string $needle): ?string
+{
+    $position = stripos($text, $needle);
+    if ($position === false) {
+        return null;
+    }
+
+    $start = max(0, $position - 120);
+    return mb_substr($text, $start, 360, 'UTF-8');
 }
 
 function firstMatch(string $pattern, string $text, int $group = 1): ?string
@@ -257,7 +270,13 @@ function fetchProtectedStatsProbe(array $config): array
         $html = @fetchProtectedUrl($config, $followedUrl, true);
     }
 
-    $preview = mb_substr(cleanText($html), 0, 500, 'UTF-8');
+    $clean = cleanText($html);
+    $preview = mb_substr($clean, 0, 500, 'UTF-8');
+    $snippets = [
+        'viewedTraffic' => textSnippet($clean, 'Viewed traffic'),
+        'uniqueVisitors' => textSnippet($clean, 'Unique visitors'),
+        'lastVisit' => textSnippet($clean, 'Last visit'),
+    ];
 
     try {
         $payload = parseAwstatsSummary($html);
@@ -271,6 +290,7 @@ function fetchProtectedStatsProbe(array $config): array
             'headers' => $headers,
             'links' => $links,
             'followedUrl' => $followedUrl,
+            'snippets' => $snippets,
             'period' => $payload['period'],
         ];
     } catch (Throwable $error) {
@@ -282,6 +302,7 @@ function fetchProtectedStatsProbe(array $config): array
             'headers' => $headers,
             'links' => $links,
             'followedUrl' => $followedUrl,
+            'snippets' => $snippets,
             'preview' => $preview,
             'message' => $error->getMessage(),
         ];
