@@ -20,7 +20,7 @@ assert(html.includes('<span>Email</span>'), 'email contact card should be labele
 const css = fs.readFileSync(path.join(root, 'httpdocs', 'css', 'styles.css'), 'utf8');
 assert(css.includes('grid-template-areas'), 'system panel overlay should use grid areas for card placement');
 assert(css.includes('"status"') && css.includes('"focus"') && css.includes('"commit"') && css.includes('"analytics"'), 'mobile panel overlay should use one-column grid areas');
-assert(css.includes('padding: 18px 24px 42px'), 'panel overlay should own consistent top/bottom spacing');
+assert(css.includes('padding: 18px 24px 72px'), 'panel overlay should create a wide bottom gap');
 assert(css.includes('margin-bottom: 0'), 'analytics card should not add separate bottom spacing inside the overlay');
 assert(/@media \(max-width: 860px\)[\s\S]*\.analytics-card\s*\{[\s\S]*align-self: end;[\s\S]*\}/.test(css), 'mobile analytics card should keep content height at the bottom of its grid row');
 assert(/\.contact-card:first-child\s*\{[\s\S]*grid-column: 1 \/ -1;[\s\S]*\}/.test(css), 'email contact card should span the full contact grid row');
