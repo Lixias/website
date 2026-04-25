@@ -14,6 +14,8 @@ assert(html.includes('data-site-stats-last-visit'), 'index.html should include t
 assert(html.includes('data-site-stats-updated'), 'index.html should include the updated hook');
 assert((html.match(/<div class="metric">/g) || []).length >= 3, 'index.html should group stats as metric items');
 assert(html.includes('data-site-stats-summary'), 'index.html should include one analytics live summary hook');
+assert((html.match(/mailto:lauri@laurikohtamaki\.fi/g) || []).length === 1, 'index.html should include one email contact card');
+assert(html.includes('<span>Email</span>'), 'email contact card should be labeled Email');
 
 const css = fs.readFileSync(path.join(root, 'httpdocs', 'css', 'styles.css'), 'utf8');
 assert(css.includes('grid-template-areas'), 'system panel overlay should use grid areas for card placement');
