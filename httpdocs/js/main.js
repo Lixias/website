@@ -1,134 +1,169 @@
-// Year stamp
 const yearEl = document.getElementById('year');
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-// Prefers reduced motion
-const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Glass nav scroll state + ScrollSpy
-const nav = document.getElementById('nav');
-const links = nav ? [...nav.querySelectorAll('a[href^="#"]')] : [];
-const sections = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+const commitMessageEl = document.querySelector('[data-commit-message]');
+const commitMetaEl = document.querySelector('[data-commit-meta]');
 
-function onScroll(){
-  const y = window.scrollY || document.documentElement.scrollTop;
-  if (nav) nav.classList.toggle('scrolled', y > 10);
+async function loadLatestCommit(){
+  if (!commitMessageEl || !commitMetaEl) return;
+  try{
+    const response = await fetch('https://api.github.com/repos/Lixias/website/commits?per_page=1', {headers:{Accept:'application/vnd.github+json'}});
+    if (!response.ok) throw new Error('GitHub unavailable');
+    const commits = await response.json();
+    const latest = commits && commits[0];
+    if (!latest) throw new Error('No commits returned');
+    const hash = latest.sha.slice(0, 7);
+    const date = new Date(latest.commit.author.date);
+    commitMessageEl.textContent = latest.commit.message.split('\n')[0];
+    commitMetaEl.textContent = `Lixias/website · ${hash} · ${date.toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'})}`;
+  }catch(error){
+    commitMessageEl.textContent = 'Latest site update unavailable';
+    commitMetaEl.innerHTML = '<a href="https://github.com/Lixias/website" target="_blank" rel="noopener">View repository on GitHub</a>';
+  }
 }
-window.addEventListener('scroll', onScroll, {passive:true});
-onScroll();
+loadLatestCommit();
 
-// ScrollSpy
-if (sections.length){
-  const spy = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      const id = '#' + e.target.id;
-      const active = nav && nav.querySelector(`a[href="${id}"]`);
-      if (!active) return;
-      if (e.isIntersecting) links.forEach(l => l.classList.toggle('active', l === active));
-    })
-  }, {rootMargin: '-55% 0px -40% 0px', threshold: 0});
-  sections.forEach(s => spy.observe(s));
+const modal = document.querySelector('[data-login-modal]');
+const openLogin = document.querySelector('[data-login-open]');
+const closeLogin = document.querySelector('[data-login-close]');
+const loginForm = document.querySelector('[data-login-form]');
+const loginError = document.querySelector('[data-login-error]');
+let lastFocusedEl = null;
+
+if (loginError) loginError.setAttribute('role', 'alert');
+
+function setLoginExpanded(isExpanded){
+  if (openLogin) openLogin.setAttribute('aria-expanded', String(isExpanded));
 }
 
-// Smooth anchor offset for fixed header
-links.forEach(a => a.addEventListener('click', e => {
-  const href = a.getAttribute('href');
-  if (!href || !href.startsWith('#')) return;
-  const target = document.querySelector(href);
-  if (!target) return;
-  e.preventDefault();
-  const headerH = nav ? nav.getBoundingClientRect().height + 12 : 0;
-  const top = target.getBoundingClientRect().top + window.pageYOffset - headerH;
-  window.scrollTo({top, behavior:'smooth'});
-  history.pushState(null, '', href);
-}));
+function showLogin(){
+  if (!modal) return;
+  lastFocusedEl = document.activeElement;
+  modal.hidden = false;
+  setLoginExpanded(true);
+  if (loginError) loginError.hidden = true;
+  const firstInput = modal.querySelector('input');
+  if (firstInput) firstInput.focus();
+}
 
-// Parallax (cursor-based) & Atmosphere (fog + glints)
-const headline = document.getElementById('headline');
-const backdrop = document.getElementById('backdrop');
-const atmo = document.getElementById('atmo');
-const ctx = atmo ? atmo.getContext('2d') : null;
+function hideLogin(){
+  if (!modal) return;
+  modal.hidden = true;
+  setLoginExpanded(false);
+  if (lastFocusedEl && typeof lastFocusedEl.focus === 'function') lastFocusedEl.focus();
+}
 
-let px = 0, py = 0; // normalized -1..1
-if (!REDUCED){
-  window.addEventListener('pointermove', (e) => {
-    const w = window.innerWidth, h = window.innerHeight;
-    px = (e.clientX - w/2) / (w/2);
-    py = (e.clientY - h/2) / (h/2);
+function getLoginFocusableEls(){
+  if (!modal) return [];
+  return [...modal.querySelectorAll('a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter(el => !el.disabled && !el.hidden && el.getClientRects().length > 0);
+}
+
+function trapLoginFocus(event){
+  const focusableEls = getLoginFocusableEls();
+  if (!focusableEls.length){
+    event.preventDefault();
+    return;
+  }
+
+  const firstEl = focusableEls[0];
+  const lastEl = focusableEls[focusableEls.length - 1];
+  if (event.shiftKey && document.activeElement === firstEl){
+    event.preventDefault();
+    lastEl.focus();
+  }else if (!event.shiftKey && document.activeElement === lastEl){
+    event.preventDefault();
+    firstEl.focus();
+  }else if (!modal.contains(document.activeElement)){
+    event.preventDefault();
+    firstEl.focus();
+  }
+}
+
+if (openLogin) openLogin.addEventListener('click', showLogin);
+if (closeLogin) closeLogin.addEventListener('click', hideLogin);
+if (modal) modal.addEventListener('click', event => { if (event.target === modal) hideLogin(); });
+document.addEventListener('keydown', event => {
+  if (!modal || modal.hidden) return;
+  if (event.key === 'Escape') hideLogin();
+  if (event.key === 'Tab') trapLoginFocus(event);
+});
+if (loginForm) loginForm.addEventListener('submit', event => {
+  event.preventDefault();
+  if (loginError) loginError.hidden = false;
+});
+
+const canvas = document.getElementById('grid-canvas');
+const ctx = canvas ? canvas.getContext('2d') : null;
+let pointerX = 0;
+let pointerY = 0;
+let dpr = Math.min(window.devicePixelRatio || 1, 2);
+const nodes = [];
+
+function resizeGrid(){
+  if (!canvas) return;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+  canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+  seedGrid();
+}
+
+function seedGrid(){
+  if (!canvas) return;
+  nodes.length = 0;
+  const cols = 7;
+  const rows = 8;
+  for (let y = 0; y < rows; y += 1){
+    for (let x = 0; x < cols; x += 1){
+      nodes.push({
+        x: ((x + .5) / cols) * canvas.width,
+        y: ((y + .5) / rows) * canvas.height,
+        phase: Math.random() * Math.PI * 2
+      });
+    }
+  }
+}
+
+function drawGrid(time = 0){
+  if (!canvas || !ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = 'rgba(37, 99, 235, .10)';
+  ctx.lineWidth = 1 * dpr;
+  const gap = 44 * dpr;
+  for (let x = 0; x < canvas.width; x += gap){ ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+  for (let y = 0; y < canvas.height; y += gap){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+
+  const driftX = reducedMotion ? 0 : pointerX * 14 * dpr;
+  const driftY = reducedMotion ? 0 : pointerY * 10 * dpr;
+  for (let i = 0; i < nodes.length; i += 1){
+    const node = nodes[i];
+    const pulse = reducedMotion ? 0 : Math.sin(time / 900 + node.phase) * 2 * dpr;
+    const x = node.x + driftX * (i % 3) / 4;
+    const y = node.y + driftY * (i % 4) / 5;
+    ctx.fillStyle = 'rgba(15, 118, 110, .55)';
+    ctx.beginPath();
+    ctx.arc(x, y, 2.2 * dpr + pulse * .2, 0, Math.PI * 2);
+    ctx.fill();
+    if (i % 5 === 0 && nodes[i + 1]){
+      ctx.strokeStyle = 'rgba(15, 118, 110, .16)';
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(nodes[i + 1].x + driftX * .2, nodes[i + 1].y + driftY * .2);
+      ctx.stroke();
+    }
+  }
+  if (!reducedMotion) requestAnimationFrame(drawGrid);
+}
+
+if (canvas && ctx){
+  window.addEventListener('resize', resizeGrid, {passive:true});
+  window.addEventListener('pointermove', event => {
+    pointerX = (event.clientX / window.innerWidth - .5) * 2;
+    pointerY = (event.clientY / window.innerHeight - .5) * 2;
   }, {passive:true});
-}
-
-// Canvas sizing
-let dpr = Math.min(2, window.devicePixelRatio || 1);
-function resizeCanvas(){
-  if (!atmo) return;
-  const w = atmo.clientWidth, h = atmo.clientHeight;
-  atmo.width = Math.round(w * dpr);
-  atmo.height = Math.round(h * dpr);
-}
-if (atmo){
-  new ResizeObserver(resizeCanvas).observe(atmo);
-  resizeCanvas();
-}
-
-// Particles
-const fog = []; const glints = [];
-const PARTICLES = 26;
-function seed(){
-  if (!atmo) return;
-  fog.length = 0; glints.length = 0;
-  const W = atmo.width, H = atmo.height;
-  for(let i=0;i<PARTICLES;i++)
-    fog.push({x:Math.random()*W, y:Math.random()*H, r:(40+Math.random()*120)*dpr, a:0.04+Math.random()*0.06, vx:(0.03+Math.random()*0.08)*dpr});
-  for(let i=0;i<8;i++)
-    glints.push({x:Math.random()*W, y:Math.random()*H, r:(1+Math.random()*2)*dpr, a:0.03+Math.random()*0.06, vy:(0.06+Math.random()*0.12)*dpr});
-}
-seed();
-
-let running = true;
-document.addEventListener('visibilitychange', ()=>{running = !document.hidden});
-
-function frame(){
-  if (!ctx || !atmo){ requestAnimationFrame(frame); return; }
-  if (!running){ requestAnimationFrame(frame); return; }
-  const W = atmo.width, H = atmo.height;
-
-  // Parallax offsets
-  const depth = REDUCED ? 0 : 10; // px max (far layer)
-  const offX = px * depth * dpr;
-  const offY = py * depth * dpr;
-
-  ctx.clearRect(0,0,W,H);
-
-  // Fog
-  for(const p of fog){
-    p.x += p.vx; if(p.x - p.r > W) p.x = -p.r;
-    ctx.beginPath(); ctx.fillStyle = `rgba(255,255,255,${p.a})`;
-    ctx.arc(p.x + offX*0.5, p.y + offY*0.5, p.r, 0, Math.PI*2);
-    ctx.fill();
-  }
-
-  // Glints
-  for(const g of glints){
-    g.y -= g.vy; if(g.y + g.r < 0){ g.y = H + g.r; g.x = Math.random()*W; }
-    ctx.beginPath(); ctx.fillStyle = `rgba(255,255,255,${g.a})`;
-    ctx.arc(g.x + offX*0.8, g.y + offY*0.8, g.r, 0, Math.PI*2);
-    ctx.fill();
-  }
-
-  // Headline + Backdrop transforms
-  if (!REDUCED){
-    if (headline) headline.style.transform = `translate3d(${(px*8).toFixed(2)}px, ${(py*6).toFixed(2)}px, 0)`;
-    if (backdrop) backdrop.style.transform = `translate3d(${(-px*4).toFixed(2)}px, ${(-py*3).toFixed(2)}px, 0)`;
-  }
-
-  requestAnimationFrame(frame);
-}
-if (!REDUCED) requestAnimationFrame(frame);
-
-// High-DPI swap listener
-if (window.matchMedia && window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`).addEventListener){
-  window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`).addEventListener('change', ()=>{
-    dpr = Math.min(2, window.devicePixelRatio || 1); resizeCanvas(); seed();
-  });
+  resizeGrid();
+  drawGrid();
 }

@@ -3,76 +3,115 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Lauri Kohtamäki — Engineer</title>
-  <meta name="description" content="Lauri Kohtamäki — engineer, learning by doing. A calm, cinematic landing with subtle atmosphere."/>
+  <title>Lauri Kohtamäki — Software Engineer</title>
+  <meta name="description" content="Lauri Kohtamäki — software engineer focused on practical automation, reliable systems, and modern AI-assisted workflows."/>
   <link rel="icon" href="/images/favicon.ico"/>
   <meta property="og:title" content="Lauri Kohtamäki"/>
-  <meta property="og:description" content="Engineer, learning by doing."/>
+  <meta property="og:description" content="Software engineer focused on practical automation, reliable systems, and modern AI-assisted workflows."/>
   <meta property="og:type" content="website"/>
   <meta property="og:url" content="https://laurikohtamaki.fi"/>
-  <meta property="og:image" content="https://laurikohtamaki.fi/og.jpg"/>
-  <link rel="preload" as="image" href="/images/forest.jpg" imagesrcset="/images/forest.jpg 1x"/>
   <link rel="stylesheet" href="/css/styles.css"/>
 </head>
 <body>
-  <!-- Header / Glass Nav -->
-  <header>
-    <div class="nav" id="nav">
-      <a class="brand" href="#home">
-        <span class="monogram" aria-hidden="true">LK</span>
-        <strong>Lauri Kohtamäki</strong>
-      </a>
-      <nav class="links" aria-label="Primary">
-        <a href="#about">About</a>
-        <a href="#contact">Contact</a>
-      </nav>
-    </div>
+  <header class="site-header">
+    <a class="brand" href="#home" aria-label="Lauri Kohtamäki home">
+      <span class="brand-mark" aria-hidden="true">LK</span>
+      <span class="brand-name">Lauri Kohtamäki</span>
+    </a>
+    <nav class="nav-links" aria-label="Primary navigation">
+      <a href="#about">About</a>
+      <a href="#contact">Contact</a>
+      <button class="nav-button" type="button" data-login-open aria-controls="login-modal" aria-haspopup="dialog" aria-expanded="false">Login</button>
+    </nav>
   </header>
 
-  <!-- HERO -->
-  <section id="home" class="hero" aria-label="Cinematic Backdrop">
-    <div class="backdrop" aria-hidden="true" id="backdrop">
-      <picture>
-        <source srcset="/images/forest.jpg" type="image/jpg"/>
-        <img src="/images/forest.jpg" alt="Abstract northern forest" fetchpriority="high"/>
-      </picture>
-      <div class="vignette"></div>
-      <canvas id="atmo"></canvas>
-      <div class="grain"></div>
-    </div>
-    <div class="hero-inner">
-      <div class="headline" id="headline" data-depth="8">
-        <h1>Lauri Kohtamäki</h1>
-        <p>engineer, learning by doing.</p>
+  <main id="home">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">Personal technical surface</p>
+        <h1 id="hero-title">Lauri Kohtamäki</h1>
+        <p class="hero-lede">Software engineer focused on practical automation, reliable systems, and modern AI-assisted workflows.</p>
+        <div class="hero-actions" aria-label="Primary actions">
+          <a class="button primary" href="#contact">Contact</a>
+          <a class="button secondary" href="#about">About</a>
+        </div>
       </div>
-    </div>
-  </section>
 
-  <!-- ABOUT -->
-  <section id="about" class="about">
-    <div class="container">
-      <h2>About</h2>
-      <p>I like boring reliability, trying wild ideas and measured improvement. I'm well rounded software engineer with systems sense.</p>
-      <div class="chips" role="list">
-        <span class="chip" role="listitem">Automation</span>
-        <span class="chip" role="listitem">Software Engineering</span>
-        <span class="chip" role="listitem">Systems Thinking</span>
+      <div class="system-panel">
+        <canvas id="grid-canvas" aria-hidden="true"></canvas>
+        <div class="panel-overlay">
+          <div class="status-row">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span>Systems online</span>
+          </div>
+          <div class="signal-card">
+            <span class="label">Focus</span>
+            <strong>Automation · Reliability · AI workflows</strong>
+          </div>
+          <div class="signal-card commit-card" id="latest-commit" aria-live="polite">
+            <span class="label">Latest site update</span>
+            <strong data-commit-message>Loading commit...</strong>
+            <span data-commit-meta>Checking GitHub</span>
+          </div>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- CONTACT -->
-  <section id="contact" class="contact">
-    <div class="container">
-      <h2>Contact</h2>
-      <p>Email: <a href="mailto:lauri.kohtamaki@cimcorp.com">lauri.kohtamaki@cimcorp.com</a></p>
-      <p>GitHub: <a href="https://github.com/" target="_blank" rel="noopener">github.com</a> · LinkedIn: <a href="https://www.linkedin.com/" target="_blank" rel="noopener">linkedin.com</a></p>
-    </div>
-  </section>
+    <section class="about-section" id="about" aria-labelledby="about-title">
+      <div class="section-kicker">About</div>
+      <h2 id="about-title">Practical engineering with a systems mindset.</h2>
+      <p>I build practical software around automation, reliability, and clear systems. I'm interested in how modern AI-assisted workflows can make engineering faster without losing discipline, maintainability, or judgment.</p>
+    </section>
 
-  <footer>
-    <div class="container">© <span id="year"></span> Lauri Kohtamäki</div>
+    <section class="contact-section" id="contact" aria-labelledby="contact-title">
+      <div class="section-kicker">Contact</div>
+      <h2 id="contact-title">Reach me through the right channel.</h2>
+      <div class="contact-grid">
+        <a class="contact-card" href="mailto:lauri.kohtamaki@gmail.com">
+          <span>Personal</span>
+          <strong>lauri.kohtamaki@gmail.com</strong>
+        </a>
+        <a class="contact-card" href="mailto:lauri.kohtamaki@cimcorp.com">
+          <span>Cimcorp related</span>
+          <strong>lauri.kohtamaki@cimcorp.com</strong>
+        </a>
+        <a class="contact-card" href="https://www.linkedin.com/in/laurikohtamaki/" target="_blank" rel="noopener">
+          <span>Professional profile</span>
+          <strong>LinkedIn</strong>
+        </a>
+        <a class="contact-card" href="https://github.com/Lixias" target="_blank" rel="noopener">
+          <span>Technical profile</span>
+          <strong>GitHub</strong>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>© <span id="year"></span> Lauri Kohtamäki</span>
+    <a href="#home">Back to top</a>
   </footer>
+
+  <div class="modal-backdrop" id="login-modal" data-login-modal hidden>
+    <section class="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title">
+      <button class="modal-close" type="button" aria-label="Close login" data-login-close>×</button>
+      <p class="eyebrow">Private labs</p>
+      <h2 id="login-title">Access portal</h2>
+      <p class="modal-copy">Labs are reserved for private experiments and future tools.</p>
+      <form class="login-form" data-login-form novalidate>
+        <label>
+          Email
+          <input type="email" name="email" autocomplete="username" required placeholder="you@example.com"/>
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" autocomplete="current-password" required placeholder="••••••••"/>
+        </label>
+        <button class="button primary" type="submit">Request access</button>
+      </form>
+      <p class="login-error" data-login-error hidden>Access is not configured yet. Labs are private for now.</p>
+    </section>
+  </div>
 
   <script src="/js/main.js" defer></script>
 </body>
