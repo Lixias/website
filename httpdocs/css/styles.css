@@ -52,6 +52,18 @@ a {
   border-radius: 10px;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .site-header {
   position: sticky;
   top: 0;
@@ -205,9 +217,15 @@ main {
 .panel-overlay {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, .9fr);
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "status status"
+    "focus commit"
+    "analytics analytics";
+  gap: 18px;
+  align-items: start;
   padding: 24px;
   pointer-events: none;
 }
@@ -217,7 +235,9 @@ main {
 }
 
 .status-row {
+  grid-area: status;
   align-self: flex-start;
+  justify-self: flex-start;
   display: flex;
   align-items: center;
   gap: 9px;
@@ -247,6 +267,11 @@ main {
   backdrop-filter: blur(12px);
 }
 
+.panel-overlay > .signal-card:not(.commit-card):not(.analytics-card) {
+  grid-area: focus;
+  align-self: center;
+}
+
 .signal-card strong {
   display: block;
   margin-top: 8px;
@@ -261,30 +286,45 @@ main {
 }
 
 .commit-card {
+  grid-area: commit;
   align-self: flex-end;
+  justify-self: end;
 }
 
 .analytics-card {
-  align-self: flex-start;
+  grid-area: analytics;
+  align-self: end;
+  justify-self: stretch;
+  max-width: none;
+  padding: 16px;
 }
 
 .metric-grid {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 6px 16px;
-  margin-top: 14px;
-  padding-top: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--line);
 }
 
-.metric-grid span {
-  color: var(--muted);
-  font-size: 14px;
+.metric {
+  min-width: 0;
 }
 
-.metric-grid strong {
+.metric span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
   margin-top: 0;
-  text-align: right;
+}
+
+.metric strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 22px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .about-section,
@@ -463,7 +503,25 @@ main {
   }
 
   .system-panel {
-    min-height: 420px;
+    min-height: 620px;
+  }
+
+  .panel-overlay {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto 1fr;
+    grid-template-areas:
+      "status"
+      "focus"
+      "commit"
+      "analytics";
+  }
+
+  .panel-overlay > .signal-card,
+  .commit-card,
+  .analytics-card {
+    justify-self: stretch;
+    align-self: auto;
+    max-width: none;
   }
 
   .about-section,

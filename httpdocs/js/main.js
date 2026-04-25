@@ -31,6 +31,7 @@ const siteStatsVisits = document.querySelector('[data-site-stats-visits]');
 const siteStatsRatio = document.querySelector('[data-site-stats-ratio]');
 const siteStatsLastVisit = document.querySelector('[data-site-stats-last-visit]');
 const siteStatsUpdated = document.querySelector('[data-site-stats-updated]');
+const siteStatsSummary = document.querySelector('[data-site-stats-summary]');
 
 function renderSiteStats(stats){
   if (!siteStatsCard) return;
@@ -41,6 +42,7 @@ function renderSiteStats(stats){
     if (siteStatsRatio) siteStatsRatio.textContent = '--';
     if (siteStatsLastVisit) siteStatsLastVisit.textContent = 'Stats unavailable';
     if (siteStatsUpdated) siteStatsUpdated.textContent = 'Stats unavailable';
+    if (siteStatsSummary) siteStatsSummary.textContent = 'Site analytics unavailable';
     return;
   }
 
@@ -49,6 +51,7 @@ function renderSiteStats(stats){
   if (siteStatsRatio) siteStatsRatio.textContent = String(stats.visitsPerVisitor);
   if (siteStatsLastVisit) siteStatsLastVisit.textContent = stats.lastVisit || 'Unknown';
   if (siteStatsUpdated) siteStatsUpdated.textContent = stats.updated || 'Unknown';
+  if (siteStatsSummary) siteStatsSummary.textContent = `Site analytics updated: ${stats.visitors} visitors, ${stats.visits} visits, ${stats.visitsPerVisitor} visits per visitor.`;
 }
 
 async function loadSiteStats(){
