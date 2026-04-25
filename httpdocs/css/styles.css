@@ -50,8 +50,6 @@ input {
   --shadow: 0 1.5rem 5rem rgba(17, 24, 39, .12);
   --container: 70rem;
   --header-offset: 6rem;
-  --panel-min-block: clamp(28rem, 48vw, 35rem);
-  --panel-mobile-min-block: clamp(31rem, 120vw, 38.75rem);
   --overlay-padding: var(--space-xl) var(--space-2xl) var(--space-3xl);
 }
 
@@ -219,7 +217,6 @@ main {
 
 .system-panel {
   position: relative;
-  min-block-size: var(--panel-min-block);
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
   overflow: hidden;
@@ -230,17 +227,18 @@ main {
 #grid-canvas {
   position: absolute;
   inset: 0;
+  z-index: 0;
   width: 100%;
   height: 100%;
   display: block;
 }
 
 .panel-overlay {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(11.25rem, .9fr);
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(var(--space-5xl), 1fr) auto;
   grid-template-areas:
     "status status"
     "focus commit"
@@ -528,13 +526,9 @@ main {
     padding-top: 2.125rem;
   }
 
-  .system-panel {
-    min-block-size: var(--panel-mobile-min-block);
-  }
-
   .panel-overlay {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto 1fr;
+    grid-template-rows: auto auto auto auto;
     grid-template-areas:
       "status"
       "focus"
