@@ -219,6 +219,10 @@ function fetchProtectedStatsProbe(array $config): array
     }
 
     $preview = mb_substr(cleanText($html), 0, 220, 'UTF-8');
+    $links = [];
+    if (preg_match_all('/\b(?:href|src)=["\']([^"\']+)["\']/i', $html, $matches)) {
+        $links = array_slice(array_values(array_unique($matches[1])), 0, 10);
+    }
 
     try {
         $payload = parseAwstatsSummary($html);
@@ -230,6 +234,7 @@ function fetchProtectedStatsProbe(array $config): array
             'httpStatus' => $status,
             'bytes' => strlen($html),
             'headers' => $headers,
+            'links' => $links,
             'period' => $payload['period'],
         ];
     } catch (Throwable $error) {
@@ -239,6 +244,7 @@ function fetchProtectedStatsProbe(array $config): array
             'httpStatus' => $status,
             'bytes' => strlen($html),
             'headers' => $headers,
+            'links' => $links,
             'preview' => $preview,
             'message' => $error->getMessage(),
         ];
