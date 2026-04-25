@@ -152,7 +152,31 @@ function writeCache(array $payload): void
     @file_put_contents(writablePrivatePath('public-stats-cache.json'), json_encode($cache, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 }
 
-function fetchProtectedStats(array $config): string
+function resolveStatsUrl(string $baseUrl, string $target): string
+{
+    if (preg_match('/^https?:\/\//i', $target)) {
+        return $target;
+    }
+
+    return rtrim($baseUrl, '/') . '/' . ltrim($target, '/');
+}
+
+function discoverReportUrl(string $html, string $baseUrl): ?string
+{
+    if (!preg_match_all('/\b(?:href|src)=["\']([^"\']+)["\']/i', $html, $matches)) {
+        return null;
+    }
+
+    foreach ($matches[1] as $target) {
+        if (stripos($target, 'current/index.html') !== false) {
+            return resolveStatsUrl($baseUrl, $target);
+        }
+    }
+
+    return null;
+}
+
+function fetchProtectedUrl(array $config, string $url, bool $ignoreErrors = false): string
 {
     foreach (['url', 'username', 'password'] as $key) {
         if (!isset($config[$key]) || !is_string($config[$key]) || $config[$key] === '') {
@@ -164,12 +188,25 @@ function fetchProtectedStats(array $config): string
         'http' => [
             'header' => 'Authorization: Basic ' . base64_encode($config['username'] . ':' . $config['password']),
             'timeout' => 5,
+            'ignore_errors' => $ignoreErrors,
         ],
     ]);
 
-    $html = @file_get_contents($config['url'], false, $context);
+    $html = @file_get_contents($url, false, $context);
     if ($html === false) {
         throw new RuntimeException('AWStats request failed.');
+    }
+
+    return $html;
+}
+
+function fetchProtectedStats(array $config): string
+{
+    $html = fetchProtectedUrl($config, $config['url']);
+    $reportUrl = discoverReportUrl($html, $config['url']);
+
+    if ($reportUrl !== null) {
+        return fetchProtectedUrl($config, $reportUrl);
     }
 
     return $html;
@@ -187,15 +224,7 @@ function fetchProtectedStatsProbe(array $config): array
         }
     }
 
-    $context = stream_context_create([
-        'http' => [
-            'header' => 'Authorization: Basic ' . base64_encode($config['username'] . ':' . $config['password']),
-            'timeout' => 5,
-            'ignore_errors' => true,
-        ],
-    ]);
-
-    $html = @file_get_contents($config['url'], false, $context);
+    $html = @fetchProtectedUrl($config, $config['url'], true);
     $status = 'unknown';
     if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $matches)) {
         $status = $matches[1];
@@ -224,6 +253,11 @@ function fetchProtectedStatsProbe(array $config): array
         $links = array_slice(array_values(array_unique($matches[1])), 0, 10);
     }
 
+    $followedUrl = discoverReportUrl($html, $config['url']);
+    if ($followedUrl !== null) {
+        $html = @fetchProtectedUrl($config, $followedUrl, true);
+    }
+
     try {
         $payload = parseAwstatsSummary($html);
         assertCurrentMonth($payload);
@@ -235,6 +269,7 @@ function fetchProtectedStatsProbe(array $config): array
             'bytes' => strlen($html),
             'headers' => $headers,
             'links' => $links,
+            'followedUrl' => $followedUrl,
             'period' => $payload['period'],
         ];
     } catch (Throwable $error) {
@@ -245,6 +280,7 @@ function fetchProtectedStatsProbe(array $config): array
             'bytes' => strlen($html),
             'headers' => $headers,
             'links' => $links,
+            'followedUrl' => $followedUrl,
             'preview' => $preview,
             'message' => $error->getMessage(),
         ];
