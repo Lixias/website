@@ -247,7 +247,6 @@ function fetchProtectedStatsProbe(array $config): array
         $headers[] = $header;
     }
 
-    $preview = mb_substr(cleanText($html), 0, 220, 'UTF-8');
     $links = [];
     if (preg_match_all('/\b(?:href|src)=["\']([^"\']+)["\']/i', $html, $matches)) {
         $links = array_slice(array_values(array_unique($matches[1])), 0, 10);
@@ -257,6 +256,8 @@ function fetchProtectedStatsProbe(array $config): array
     if ($followedUrl !== null) {
         $html = @fetchProtectedUrl($config, $followedUrl, true);
     }
+
+    $preview = mb_substr(cleanText($html), 0, 500, 'UTF-8');
 
     try {
         $payload = parseAwstatsSummary($html);
