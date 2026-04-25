@@ -226,7 +226,7 @@ main {
     "analytics analytics";
   gap: 18px;
   align-items: start;
-  padding: 24px;
+  padding: 18px 24px 30px;
   pointer-events: none;
 }
 
@@ -296,6 +296,7 @@ main {
   align-self: end;
   justify-self: stretch;
   max-width: none;
+  margin-bottom: 6px;
   padding: 16px;
 }
 
@@ -522,6 +523,10 @@ main {
     justify-self: stretch;
     align-self: auto;
     max-width: none;
+  }
+
+  .analytics-card {
+    align-self: end;
   }
 
   .about-section,

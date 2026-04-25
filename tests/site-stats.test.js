@@ -18,6 +18,9 @@ assert(html.includes('data-site-stats-summary'), 'index.html should include one 
 const css = fs.readFileSync(path.join(root, 'httpdocs', 'css', 'styles.css'), 'utf8');
 assert(css.includes('grid-template-areas'), 'system panel overlay should use grid areas for card placement');
 assert(css.includes('"status"') && css.includes('"focus"') && css.includes('"commit"') && css.includes('"analytics"'), 'mobile panel overlay should use one-column grid areas');
+assert(css.includes('padding: 18px 24px 30px'), 'panel overlay should use balanced top/bottom spacing');
+assert(css.includes('margin-bottom: 6px'), 'analytics card should be lifted from the panel bottom edge');
+assert(/@media \(max-width: 860px\)[\s\S]*\.analytics-card\s*\{[\s\S]*align-self: end;[\s\S]*\}/.test(css), 'mobile analytics card should keep content height at the bottom of its grid row');
 assert(css.includes('font-variant-numeric: tabular-nums'), 'analytics values should use tabular numbers for alignment');
 
 assert(js.includes('function renderSiteStats'), 'main.js should define renderSiteStats');
