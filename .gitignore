@@ -34,6 +34,10 @@ yarn-error.log*
 .temp/
 .sass-cache/
 
+# Server-only credentials
+private/awstats-auth.php
+private/public-stats-cache.json
+
 # Local worktrees
 .worktrees/
 
