@@ -20,9 +20,15 @@ assert(html.includes('<span>Email</span>'), 'email contact card should be labele
 const css = fs.readFileSync(path.join(root, 'httpdocs', 'css', 'styles.css'), 'utf8');
 assert(css.includes('grid-template-areas'), 'system panel overlay should use grid areas for card placement');
 assert(css.includes('"status"') && css.includes('"focus"') && css.includes('"commit"') && css.includes('"analytics"'), 'mobile panel overlay should use one-column grid areas');
-assert(css.includes('padding: 18px 24px 72px'), 'panel overlay should create a wide bottom gap');
-assert(css.includes('margin-bottom: 0'), 'analytics card should not add separate bottom spacing inside the overlay');
-assert(/@media \(max-width: 860px\)[\s\S]*\.analytics-card\s*\{[\s\S]*align-self: end;[\s\S]*\}/.test(css), 'mobile analytics card should keep content height at the bottom of its grid row');
+assert(/--space-[\w-]+:/.test(css), 'stylesheet should define reusable spacing tokens');
+assert(/--overlay-padding:/.test(css), 'panel overlay spacing should be a named token');
+assert(/--panel-min-block:\s*clamp\(/.test(css), 'system panel sizing token should be responsive');
+assert(/\.system-panel\s*\{[\s\S]*min-block-size:\s*var\(--panel-min-block\)/.test(css), 'system panel should use the responsive sizing token');
+assert(!css.includes('min-height: 560px'), 'system panel should not use fixed desktop min-height');
+assert(!css.includes('min-height: 620px'), 'system panel should not use fixed mobile min-height');
+assert(/\.panel-overlay\s*\{[\s\S]*padding:\s*var\(--overlay-padding\)/.test(css), 'panel overlay should use named spacing instead of hard-coded padding');
+assert(!/\.analytics-card\s*\{[\s\S]*margin-bottom:\s*(?!0\b|var\(--space-none\))[1-9]/.test(css), 'analytics card should not use positive bottom margin as panel spacing');
+assert(/@media \(max-width: 53\.75rem\)[\s\S]*\.analytics-card\s*\{[\s\S]*align-self: end;[\s\S]*\}/.test(css), 'mobile analytics card should keep content height at the bottom of its grid row');
 assert(/\.contact-card:first-child\s*\{[\s\S]*grid-column: 1 \/ -1;[\s\S]*\}/.test(css), 'email contact card should span the full contact grid row');
 assert(css.includes('font-variant-numeric: tabular-nums'), 'analytics values should use tabular numbers for alignment');
 

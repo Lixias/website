@@ -29,27 +29,48 @@ input {
   --soft: rgba(255, 255, 255, .72);
   --accent: #2563eb;
   --accent-2: #0f766e;
-  --shadow: 0 24px 80px rgba(17, 24, 39, .12);
-  --radius: 24px;
-  --container: 1120px;
+  --space-none: 0;
+  --space-2xs: .125rem;
+  --space-xs: .375rem;
+  --space-sm: .5rem;
+  --space-md: .75rem;
+  --space-lg: 1rem;
+  --space-xl: 1.25rem;
+  --space-2xl: 1.5rem;
+  --space-3xl: 2rem;
+  --space-4xl: 3rem;
+  --space-5xl: 4.5rem;
+  --space-section: clamp(4.5rem, 8vw, 6rem);
+  --radius-sm: .625rem;
+  --radius-md: .875rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.75rem;
+  --radius-panel: 2rem;
+  --radius-pill: 999px;
+  --shadow: 0 1.5rem 5rem rgba(17, 24, 39, .12);
+  --container: 70rem;
+  --header-offset: 6rem;
+  --panel-min-block: clamp(28rem, 48vw, 35rem);
+  --panel-mobile-min-block: clamp(31rem, 120vw, 38.75rem);
+  --overlay-padding: var(--space-xl) var(--space-2xl) var(--space-3xl);
 }
 
 body {
   min-height: 100%;
-  font: 400 16px/1.6 Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font: 400 1rem/1.6 Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   background: radial-gradient(circle at 80% 0%, rgba(37, 99, 235, .12), transparent 34%), linear-gradient(180deg, #fbfaf7 0%, var(--bg) 100%);
   color: var(--ink);
 }
 
 a {
   color: inherit;
-  text-underline-offset: 4px;
+  text-underline-offset: .25rem;
 }
 
 :focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 3px;
-  border-radius: 10px;
+  outline: .1875rem solid var(--accent);
+  outline-offset: .1875rem;
+  border-radius: var(--radius-sm);
 }
 
 .sr-only {
@@ -71,32 +92,32 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: var(--space-xl);
   max-width: var(--container);
   margin: 0 auto;
-  padding: 18px 24px;
+  padding: var(--space-xl) var(--space-2xl);
   background: rgba(245, 243, 238, .78);
-  backdrop-filter: blur(18px);
+  backdrop-filter: blur(1.125rem);
   border-bottom: 1px solid var(--line);
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-md);
   text-decoration: none;
   font-weight: 700;
 }
 
 .brand-mark {
-  width: 38px;
-  height: 38px;
+  width: 2.375rem;
+  height: 2.375rem;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   display: grid;
   place-items: center;
   background: var(--surface);
-  box-shadow: 0 10px 30px rgba(17, 24, 39, .08);
+  box-shadow: 0 .625rem 1.875rem rgba(17, 24, 39, .08);
 }
 
 .brand-name {
@@ -106,7 +127,7 @@ a {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-xs);
 }
 
 .nav-links a,
@@ -115,8 +136,8 @@ a {
   background: transparent;
   text-decoration: none;
   color: var(--muted);
-  padding: 9px 11px;
-  border-radius: 999px;
+  padding: .5625rem .6875rem;
+  border-radius: var(--radius-pill);
   cursor: pointer;
 }
 
@@ -127,24 +148,24 @@ a {
 }
 
 main {
-  scroll-margin-top: 96px;
+  scroll-margin-top: var(--header-offset);
   max-width: var(--container);
   margin: 0 auto;
-  padding: 56px 24px 0;
+  padding: 3.5rem var(--space-2xl) 0;
 }
 
 .hero {
-  min-height: calc(100svh - 96px);
+  min-block-size: calc(100svh - var(--header-offset));
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 520px);
-  gap: 48px;
+  grid-template-columns: minmax(0, 1fr) minmax(22.5rem, 32.5rem);
+  gap: var(--space-4xl);
   align-items: center;
 }
 
 .eyebrow,
 .section-kicker,
 .label {
-  font-size: 12px;
+  font-size: .75rem;
   font-weight: 700;
   letter-spacing: .14em;
   text-transform: uppercase;
@@ -152,34 +173,34 @@ main {
 }
 
 .hero h1 {
-  font-size: clamp(48px, 8vw, 92px);
+  font-size: clamp(3rem, 8vw, 5.75rem);
   line-height: .95;
   letter-spacing: -.07em;
-  margin-top: 18px;
+  margin-top: var(--space-xl);
 }
 
 .hero-lede {
-  max-width: 650px;
-  margin-top: 24px;
-  font-size: clamp(19px, 2.4vw, 26px);
+  max-width: 40.625rem;
+  margin-top: var(--space-2xl);
+  font-size: clamp(1.1875rem, 2.4vw, 1.625rem);
   line-height: 1.35;
   color: #344054;
 }
 
 .hero-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--space-md);
   flex-wrap: wrap;
-  margin-top: 32px;
+  margin-top: var(--space-3xl);
 }
 
 .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  padding: 0 18px;
-  border-radius: 999px;
+  min-block-size: 2.75rem;
+  padding: 0 var(--space-xl);
+  border-radius: var(--radius-pill);
   text-decoration: none;
   border: 1px solid var(--line);
   cursor: pointer;
@@ -198,9 +219,9 @@ main {
 
 .system-panel {
   position: relative;
-  min-height: 560px;
+  min-block-size: var(--panel-min-block);
   border: 1px solid var(--line);
-  border-radius: 32px;
+  border-radius: var(--radius-panel);
   overflow: hidden;
   background: linear-gradient(135deg, rgba(255, 255, 255, .92), rgba(229, 238, 255, .74));
   box-shadow: var(--shadow);
@@ -218,15 +239,15 @@ main {
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, .9fr);
+  grid-template-columns: minmax(0, 1fr) minmax(11.25rem, .9fr);
   grid-template-rows: auto 1fr auto;
   grid-template-areas:
     "status status"
     "focus commit"
     "analytics analytics";
-  gap: 18px;
+  gap: var(--space-xl);
   align-items: start;
-  padding: 18px 24px 72px;
+  padding: var(--overlay-padding);
   pointer-events: none;
 }
 
@@ -240,31 +261,31 @@ main {
   justify-self: flex-start;
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 8px 12px;
+  gap: .5625rem;
+  padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, .74);
   color: var(--muted);
-  font-size: 14px;
+  font-size: .875rem;
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
+  width: var(--space-sm);
+  height: var(--space-sm);
+  border-radius: var(--radius-pill);
   background: #12b76a;
-  box-shadow: 0 0 0 6px rgba(18, 183, 106, .12);
+  box-shadow: 0 0 0 var(--space-xs) rgba(18, 183, 106, .12);
 }
 
 .signal-card {
-  max-width: 330px;
-  padding: 18px;
+  max-width: 20.625rem;
+  padding: var(--space-xl);
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, .82);
-  box-shadow: 0 18px 48px rgba(17, 24, 39, .10);
-  backdrop-filter: blur(12px);
+  box-shadow: 0 1.125rem 3rem rgba(17, 24, 39, .10);
+  backdrop-filter: blur(.75rem);
 }
 
 .panel-overlay > .signal-card:not(.commit-card):not(.analytics-card) {
@@ -274,15 +295,15 @@ main {
 
 .signal-card strong {
   display: block;
-  margin-top: 8px;
+  margin-top: var(--space-sm);
   line-height: 1.25;
 }
 
 .signal-card span:not(.label) {
   display: block;
-  margin-top: 8px;
+  margin-top: var(--space-sm);
   color: var(--muted);
-  font-size: 14px;
+  font-size: .875rem;
 }
 
 .commit-card {
@@ -296,16 +317,16 @@ main {
   align-self: end;
   justify-self: stretch;
   max-width: none;
-  margin-bottom: 0;
-  padding: 16px;
+  margin-bottom: var(--space-none);
+  padding: var(--space-lg);
 }
 
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 12px;
-  padding-top: 12px;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
   border-top: 1px solid var(--line);
 }
 
@@ -316,52 +337,52 @@ main {
 .metric span {
   display: block;
   color: var(--muted);
-  font-size: 12px;
+  font-size: .75rem;
   margin-top: 0;
 }
 
 .metric strong {
   display: block;
-  margin-top: 3px;
-  font-size: 22px;
+  margin-top: .1875rem;
+  font-size: 1.375rem;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .about-section,
 .contact-section {
-  scroll-margin-top: 96px;
-  padding: 96px 0;
+  scroll-margin-top: var(--header-offset);
+  padding: var(--space-section) 0;
   border-top: 1px solid var(--line);
 }
 
 .about-section h2,
 .contact-section h2 {
-  max-width: 760px;
-  margin-top: 12px;
-  font-size: clamp(30px, 4vw, 52px);
+  max-width: 47.5rem;
+  margin-top: var(--space-md);
+  font-size: clamp(1.875rem, 4vw, 3.25rem);
   line-height: 1.05;
   letter-spacing: -.045em;
 }
 
 .about-section p {
-  max-width: 760px;
-  margin-top: 22px;
+  max-width: 47.5rem;
+  margin-top: 1.375rem;
   color: #344054;
-  font-size: 19px;
+  font-size: 1.1875rem;
 }
 
 .contact-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  margin-top: 32px;
+  gap: var(--space-md);
+  margin-top: var(--space-3xl);
 }
 
 .contact-card {
-  padding: 20px;
+  padding: var(--space-xl);
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   background: var(--surface);
   text-decoration: none;
   transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
@@ -372,30 +393,30 @@ main {
 }
 
 .contact-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(calc(-1 * var(--space-2xs)));
   border-color: rgba(37, 99, 235, .28);
-  box-shadow: 0 18px 40px rgba(17, 24, 39, .08);
+  box-shadow: 0 1.125rem 2.5rem rgba(17, 24, 39, .08);
 }
 
 .contact-card span {
   display: block;
   color: var(--muted);
-  font-size: 14px;
+  font-size: .875rem;
 }
 
 .contact-card strong {
   display: block;
-  margin-top: 6px;
+  margin-top: var(--space-xs);
   word-break: break-word;
 }
 
 .site-footer {
   max-width: var(--container);
   margin: 0 auto;
-  padding: 34px 24px;
+  padding: 2.125rem var(--space-2xl);
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--space-lg);
   color: var(--muted);
   border-top: 1px solid var(--line);
 }
@@ -406,9 +427,9 @@ main {
   z-index: 50;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: var(--space-xl);
   background: rgba(17, 24, 39, .35);
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(.875rem);
 }
 
 .modal-backdrop[hidden] {
@@ -417,11 +438,11 @@ main {
 
 .login-modal {
   position: relative;
-  width: min(100%, 420px);
-  max-height: calc(100svh - 40px);
+  width: min(100%, 26.25rem);
+  max-block-size: calc(100svh - 2 * var(--space-xl));
   overflow: auto;
-  padding: 28px;
-  border-radius: 28px;
+  padding: var(--space-3xl);
+  border-radius: var(--radius-xl);
   background: var(--surface);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
@@ -429,62 +450,62 @@ main {
 
 .modal-close {
   position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 36px;
-  height: 36px;
+  top: var(--space-md);
+  right: var(--space-md);
+  width: 2.25rem;
+  height: 2.25rem;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   cursor: pointer;
 }
 
 .login-modal h2 {
-  margin-top: 10px;
-  font-size: 34px;
+  margin-top: var(--space-sm);
+  font-size: 2.125rem;
   letter-spacing: -.04em;
 }
 
 .modal-copy {
-  margin-top: 8px;
+  margin-top: var(--space-sm);
   color: var(--muted);
 }
 
 .login-form {
   display: grid;
-  gap: 14px;
-  margin-top: 22px;
+  gap: var(--space-md);
+  margin-top: 1.375rem;
 }
 
 .login-form label {
   display: grid;
-  gap: 6px;
+  gap: var(--space-xs);
   color: var(--muted);
-  font-size: 14px;
+  font-size: .875rem;
 }
 
 .login-form input {
-  height: 46px;
+  block-size: 2.875rem;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 0 12px;
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-md);
   background: #fff;
   color: var(--ink);
 }
 
 .login-error {
-  margin-top: 16px;
-  padding: 12px;
-  border-radius: 14px;
+  margin-top: var(--space-lg);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
   background: rgba(37, 99, 235, .08);
   color: #1d4ed8;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 53.75rem) {
   .site-header {
     align-items: flex-start;
     flex-wrap: wrap;
-    padding: 14px 16px;
+    padding: var(--space-md) var(--space-lg);
   }
 
   .brand,
@@ -498,17 +519,17 @@ main {
 
   .nav-links {
     flex-wrap: wrap;
-    gap: 2px;
+    gap: var(--space-2xs);
   }
 
   .hero {
-    min-height: auto;
+    min-block-size: auto;
     grid-template-columns: 1fr;
-    padding-top: 34px;
+    padding-top: 2.125rem;
   }
 
   .system-panel {
-    min-height: 620px;
+    min-block-size: var(--panel-mobile-min-block);
   }
 
   .panel-overlay {
@@ -535,7 +556,7 @@ main {
 
   .about-section,
   .contact-section {
-    padding: 72px 0;
+    padding: var(--space-5xl) 0;
   }
 
   .contact-grid {
