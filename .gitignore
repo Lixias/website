@@ -37,7 +37,7 @@ yarn-error.log*
 # Server-only credentials
 private/awstats-auth.php
 private/public-stats-cache.json
-httpdocs/private/awstats-auth.php
-httpdocs/private/public-stats-cache.json
-httpdocs/api/awstats-auth.php
+
+# Local worktrees
+.worktrees/
 

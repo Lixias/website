@@ -5,41 +5,10 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: public, max-age=300');
 
+const CONFIG_PATH = __DIR__ . '/../../private/awstats-auth.php';
+const SAMPLE_PATH = __DIR__ . '/../../private/awstats-sample.txt';
+const CACHE_PATH = __DIR__ . '/../../private/public-stats-cache.json';
 const CACHE_TTL_SECONDS = 900;
-
-function privatePath(string $file): string
-{
-    $paths = [
-        __DIR__ . '/../../private/' . $file,
-        __DIR__ . '/../private/' . $file,
-        __DIR__ . '/' . $file,
-    ];
-
-    foreach ($paths as $path) {
-        if (is_readable($path)) {
-            return $path;
-        }
-    }
-
-    return $paths[0];
-}
-
-function writablePrivatePath(string $file): string
-{
-    $paths = [
-        __DIR__ . '/../../private/' . $file,
-        __DIR__ . '/../private/' . $file,
-    ];
-
-    foreach ($paths as $path) {
-        $directory = dirname($path);
-        if (is_dir($directory) && is_writable($directory)) {
-            return $path;
-        }
-    }
-
-    return $paths[0];
-}
 
 function respond(array $payload, int $statusCode = 200): void
 {
@@ -103,12 +72,11 @@ function assertCurrentMonth(array $payload): void
 
 function readCache(): ?array
 {
-    $cachePath = privatePath('public-stats-cache.json');
-    if (!is_readable($cachePath)) {
+    if (!is_readable(CACHE_PATH)) {
         return null;
     }
 
-    $raw = file_get_contents($cachePath);
+    $raw = file_get_contents(CACHE_PATH);
     if ($raw === false) {
         return null;
     }
@@ -132,7 +100,7 @@ function writeCache(array $payload): void
         'payload' => $payload,
     ];
 
-    @file_put_contents(writablePrivatePath('public-stats-cache.json'), json_encode($cache, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    @file_put_contents(CACHE_PATH, json_encode($cache, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 }
 
 function fetchProtectedStats(array $config): string
@@ -158,14 +126,70 @@ function fetchProtectedStats(array $config): string
     return $html;
 }
 
+function fetchProtectedStatsProbe(array $config): array
+{
+    foreach (['url', 'username', 'password'] as $key) {
+        if (!isset($config[$key]) || !is_string($config[$key]) || $config[$key] === '') {
+            return [
+                'ok' => false,
+                'stage' => 'config',
+                'message' => 'AWStats configuration is incomplete.',
+            ];
+        }
+    }
+
+    $context = stream_context_create([
+        'http' => [
+            'header' => 'Authorization: Basic ' . base64_encode($config['username'] . ':' . $config['password']),
+            'timeout' => 5,
+            'ignore_errors' => true,
+        ],
+    ]);
+
+    $html = @file_get_contents($config['url'], false, $context);
+    $status = 'unknown';
+    if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $matches)) {
+        $status = $matches[1];
+    }
+
+    if ($html === false) {
+        return [
+            'ok' => false,
+            'stage' => 'fetch',
+            'httpStatus' => $status,
+            'message' => 'AWStats request failed.',
+        ];
+    }
+
+    try {
+        $payload = parseAwstatsSummary($html);
+        assertCurrentMonth($payload);
+
+        return [
+            'ok' => true,
+            'stage' => 'parse',
+            'httpStatus' => $status,
+            'bytes' => strlen($html),
+            'period' => $payload['period'],
+        ];
+    } catch (Throwable $error) {
+        return [
+            'ok' => false,
+            'stage' => 'parse',
+            'httpStatus' => $status,
+            'bytes' => strlen($html),
+            'message' => $error->getMessage(),
+        ];
+    }
+}
+
 try {
     if (isset($_GET['sample'])) {
-        $samplePath = privatePath('awstats-sample.txt');
-        if (!is_readable($samplePath)) {
+        if (!is_readable(SAMPLE_PATH)) {
             respond(['available' => false, 'message' => 'Stats sample unavailable'], 503);
         }
 
-        $sample = file_get_contents($samplePath);
+        $sample = file_get_contents(SAMPLE_PATH);
         if ($sample === false) {
             respond(['available' => false, 'message' => 'Stats sample unavailable'], 503);
         }
@@ -173,6 +197,27 @@ try {
         $payload = parseAwstatsSummary($sample);
         assertCurrentMonth($payload);
         respond($payload);
+    }
+
+    if (isset($_GET['probe'])) {
+        if (!is_readable(CONFIG_PATH)) {
+            respond([
+                'ok' => false,
+                'stage' => 'config',
+                'message' => 'Stats config unavailable',
+            ], 503);
+        }
+
+        $config = require CONFIG_PATH;
+        if (!is_array($config)) {
+            respond([
+                'ok' => false,
+                'stage' => 'config',
+                'message' => 'AWStats configuration is invalid.',
+            ], 503);
+        }
+
+        respond(fetchProtectedStatsProbe($config));
     }
 
     $cached = readCache();
@@ -185,12 +230,11 @@ try {
         }
     }
 
-    $configPath = privatePath('awstats-auth.php');
-    if (!is_readable($configPath)) {
+    if (!is_readable(CONFIG_PATH)) {
         respond(['available' => false, 'message' => 'Stats unavailable'], 503);
     }
 
-    $config = require $configPath;
+    $config = require CONFIG_PATH;
     if (!is_array($config)) {
         throw new RuntimeException('AWStats configuration is invalid.');
     }
