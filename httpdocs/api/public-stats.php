@@ -126,6 +126,63 @@ function fetchProtectedStats(array $config): string
     return $html;
 }
 
+function fetchProtectedStatsProbe(array $config): array
+{
+    foreach (['url', 'username', 'password'] as $key) {
+        if (!isset($config[$key]) || !is_string($config[$key]) || $config[$key] === '') {
+            return [
+                'ok' => false,
+                'stage' => 'config',
+                'message' => 'AWStats configuration is incomplete.',
+            ];
+        }
+    }
+
+    $context = stream_context_create([
+        'http' => [
+            'header' => 'Authorization: Basic ' . base64_encode($config['username'] . ':' . $config['password']),
+            'timeout' => 5,
+            'ignore_errors' => true,
+        ],
+    ]);
+
+    $html = @file_get_contents($config['url'], false, $context);
+    $status = 'unknown';
+    if (isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $matches)) {
+        $status = $matches[1];
+    }
+
+    if ($html === false) {
+        return [
+            'ok' => false,
+            'stage' => 'fetch',
+            'httpStatus' => $status,
+            'message' => 'AWStats request failed.',
+        ];
+    }
+
+    try {
+        $payload = parseAwstatsSummary($html);
+        assertCurrentMonth($payload);
+
+        return [
+            'ok' => true,
+            'stage' => 'parse',
+            'httpStatus' => $status,
+            'bytes' => strlen($html),
+            'period' => $payload['period'],
+        ];
+    } catch (Throwable $error) {
+        return [
+            'ok' => false,
+            'stage' => 'parse',
+            'httpStatus' => $status,
+            'bytes' => strlen($html),
+            'message' => $error->getMessage(),
+        ];
+    }
+}
+
 try {
     if (isset($_GET['sample'])) {
         if (!is_readable(SAMPLE_PATH)) {
@@ -140,6 +197,27 @@ try {
         $payload = parseAwstatsSummary($sample);
         assertCurrentMonth($payload);
         respond($payload);
+    }
+
+    if (isset($_GET['probe'])) {
+        if (!is_readable(CONFIG_PATH)) {
+            respond([
+                'ok' => false,
+                'stage' => 'config',
+                'message' => 'Stats config unavailable',
+            ], 503);
+        }
+
+        $config = require CONFIG_PATH;
+        if (!is_array($config)) {
+            respond([
+                'ok' => false,
+                'stage' => 'config',
+                'message' => 'AWStats configuration is invalid.',
+            ], 503);
+        }
+
+        respond(fetchProtectedStatsProbe($config));
     }
 
     $cached = readCache();
