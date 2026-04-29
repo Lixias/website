@@ -87,12 +87,6 @@ a {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(245, 243, 238, .78);
-  backdrop-filter: blur(1.125rem);
-  border-bottom: 1px solid var(--line);
-}
-
-.site-header-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -100,6 +94,9 @@ a {
   max-width: var(--container);
   margin: 0 auto;
   padding: var(--space-xl) var(--space-2xl);
+  background: rgba(245, 243, 238, .78);
+  backdrop-filter: blur(1.125rem);
+  border-bottom: 1px solid var(--line);
 }
 
 .brand {
@@ -503,7 +500,7 @@ main {
 }
 
 @media (max-width: 53.75rem) {
-  .site-header-inner {
+  .site-header {
     align-items: flex-start;
     flex-wrap: wrap;
     padding: var(--space-md) var(--space-lg);
