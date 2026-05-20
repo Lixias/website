@@ -245,7 +245,7 @@ main {
   grid-template-areas:
     "status status"
     "focus commit"
-    "analytics analytics";
+    "now now";
   gap: var(--space-xl);
   align-items: start;
   padding: var(--overlay-padding);
@@ -289,7 +289,7 @@ main {
   backdrop-filter: blur(.75rem);
 }
 
-.panel-overlay > .signal-card:not(.commit-card):not(.analytics-card) {
+.panel-overlay > .signal-card:not(.commit-card):not(.now-card) {
   grid-area: focus;
   align-self: center;
 }
@@ -313,8 +313,8 @@ main {
   justify-self: end;
 }
 
-.analytics-card {
-  grid-area: analytics;
+.now-card {
+  grid-area: now;
   align-self: end;
   justify-self: stretch;
   max-width: none;
@@ -322,7 +322,7 @@ main {
   padding: var(--space-lg);
 }
 
-.metric-grid {
+.focus-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-sm);
@@ -331,23 +331,17 @@ main {
   border-top: 1px solid var(--line);
 }
 
-.metric {
+.focus-list span {
   min-width: 0;
-}
-
-.metric span {
-  display: block;
-  color: var(--muted);
-  font-size: .75rem;
   margin-top: 0;
-}
-
-.metric strong {
-  display: block;
-  margin-top: .1875rem;
-  font-size: 1.375rem;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid rgba(15, 118, 110, .18);
+  border-radius: var(--radius-md);
+  background: rgba(15, 118, 110, .06);
+  color: #0f766e;
+  font-size: .8125rem;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .about-section,
@@ -536,19 +530,23 @@ main {
       "status"
       "focus"
       "commit"
-      "analytics";
+      "now";
   }
 
   .panel-overlay > .signal-card,
   .commit-card,
-  .analytics-card {
+  .now-card {
     justify-self: stretch;
     align-self: auto;
     max-width: none;
   }
 
-  .analytics-card {
+  .now-card {
     align-self: end;
+  }
+
+  .focus-list {
+    grid-template-columns: 1fr;
   }
 
   .about-section,

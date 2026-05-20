@@ -25,48 +25,6 @@ async function loadLatestCommit(){
 }
 loadLatestCommit();
 
-const siteStatsCard = document.querySelector('[data-site-stats-card]');
-const siteStatsVisitors = document.querySelector('[data-site-stats-visitors]');
-const siteStatsVisits = document.querySelector('[data-site-stats-visits]');
-const siteStatsRatio = document.querySelector('[data-site-stats-ratio]');
-const siteStatsLastVisit = document.querySelector('[data-site-stats-last-visit]');
-const siteStatsUpdated = document.querySelector('[data-site-stats-updated]');
-const siteStatsSummary = document.querySelector('[data-site-stats-summary]');
-
-function renderSiteStats(stats){
-  if (!siteStatsCard) return;
-
-  if (!stats || stats.available === false){
-    if (siteStatsVisitors) siteStatsVisitors.textContent = '--';
-    if (siteStatsVisits) siteStatsVisits.textContent = '--';
-    if (siteStatsRatio) siteStatsRatio.textContent = '--';
-    if (siteStatsLastVisit) siteStatsLastVisit.textContent = 'Stats unavailable';
-    if (siteStatsUpdated) siteStatsUpdated.textContent = 'Stats unavailable';
-    if (siteStatsSummary) siteStatsSummary.textContent = 'Site analytics unavailable';
-    return;
-  }
-
-  if (siteStatsVisitors) siteStatsVisitors.textContent = String(stats.visitors);
-  if (siteStatsVisits) siteStatsVisits.textContent = String(stats.visits);
-  if (siteStatsRatio) siteStatsRatio.textContent = String(stats.visitsPerVisitor);
-  if (siteStatsLastVisit) siteStatsLastVisit.textContent = stats.lastVisit || 'Unknown';
-  if (siteStatsUpdated) siteStatsUpdated.textContent = stats.updated || 'Unknown';
-  if (siteStatsSummary) siteStatsSummary.textContent = `Site analytics updated: ${stats.visitors} visitors, ${stats.visits} visits, ${stats.visitsPerVisitor} visits per visitor.`;
-}
-
-async function loadSiteStats(){
-  if (!siteStatsCard) return;
-
-  try{
-    const response = await fetch('/api/public-stats.php', {headers:{Accept:'application/json'}});
-    if (!response.ok) throw new Error('Stats unavailable');
-    renderSiteStats(await response.json());
-  }catch(error){
-    renderSiteStats({available:false});
-  }
-}
-loadSiteStats();
-
 const modal = document.querySelector('[data-login-modal]');
 const openLogin = document.querySelector('[data-login-open]');
 const closeLogin = document.querySelector('[data-login-close]');
